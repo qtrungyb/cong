@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Chấm Công Hành Chính (Firebase)</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- CSS CHO BẢN WEB --- */
+        :root {
+            --primary-color: #1a73e8; --border-color: #dadce0; --bg-header: #f8f9fa;
+            --bg-sunday: #e8f0fe; --bg-hover: #f1f8ff; --text-main: #202124;
+            --text-muted: #5f6368; --highlight-bg: #d2e3fc; --highlight-text: #174ea6;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 15px 20px; font-size: 12.5px; color: var(--text-main); background-color: #ffffff; }
+        .header-info { margin-bottom: 10px; line-height: 1.5; }
+        .header-info strong { color: #000; font-size: 13.5px;}
+        input.dept-input { font-size: 13px; font-family: inherit; font-weight: 600; border: none; border-bottom: 1px dashed #888; background: transparent; color: #000; width: 250px; outline: none; transition: border-color 0.2s; padding: 0 4px; margin-left: 5px; text-align: left; }
+        input.dept-input:focus { border-bottom: 1px solid var(--primary-color); }
+        .title-section { text-align: center; margin: 0 0 20px 0; }
+        .title-section h2 { margin: 0 0 10px 0; font-size: 22px; text-transform: uppercase; color: #202124; letter-spacing: 0.5px; }
+        .month-year-controls { font-size: 16px; font-weight: 600; color: var(--text-main); display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .month-year-controls select, .month-year-controls input { font-size: 16px; font-weight: bold; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px; color: var(--primary-color); background-color: #f8f9fa; cursor: pointer; text-align: center; outline: none; }
+        .month-year-controls select:focus, .month-year-controls input:focus { border-color: var(--primary-color); background-color: #fff; }
+        .month-year-controls input { width: 75px; }
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        button { padding: 6px 14px; background-color: #1a73e8; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: 500; font-size: 13px; transition: background 0.2s; }
+        button:hover { background-color: #1557b0; }
+        .btn-excel { background-color: #1e8e3e; margin-right: 10px; }
+        .btn-excel:hover { background-color: #177132; }
+        .btn-del { background: none; color: var(--text-muted); padding: 4px 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-del:hover { color: red; background: none;}
+        
+        /* --- ĐÃ SỬA: Cố định max-height để 15 người mới xuất hiện thanh cuộn dọc --- */
+        .table-container { width: 100%; overflow: auto; max-height: 595px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; }
+        
+        table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1120px; font-size: 12px; background: #fff; }
+        th, td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: middle; height: 29px; position: relative; background-color: #fff; }
+        thead { position: -webkit-sticky; position: sticky; top: 0; z-index: 10; }
+        tfoot { position: -webkit-sticky; position: sticky; bottom: 0; z-index: 10; }
+        thead th, tfoot td { background-color: var(--bg-header); font-weight: 600; }
+        .sunday { background-color: var(--bg-sunday) !important; color: #1967d2 !important; }
+        
+        table input[type="text"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; background: transparent; font-weight: 600; font-size: 12px; color: var(--text-main); transition: all 0.1s ease; }
+        td input.day-input:hover, td input.day-input:focus { background-color: #ffffff; box-shadow: inset 0 0 0 2.5px var(--primary-color) !important; cursor: pointer; z-index: 2; }
+        .highlight-header { background-color: var(--highlight-bg) !important; color: var(--highlight-text) !important; font-weight: bold !important; }
+
+        .col-tt { width: 35px; min-width: 35px; max-width: 35px; position: -webkit-sticky; position: sticky; left: 0; z-index: 5; }
+        .col-name { width: 150px; min-width: 150px; max-width: 150px; position: -webkit-sticky; position: sticky; left: 35px; z-index: 5; text-align: left; padding-left: 5px;}
+        .col-role { width: 75px; min-width: 75px; max-width: 75px; position: -webkit-sticky; position: sticky; left: 185px; z-index: 5; border-right: 2px solid #9aa0a6 !important; font-size: 11px;}
+        thead th.col-tt, thead th.col-name, thead th.col-role { z-index: 15 !important; background-color: var(--bg-header); }
+        .summary-col { font-weight: 600; background-color: #f8f9fa; }
+        .legend { margin-top: 15px; font-size: 12px; }
+        .tips { font-size: 11.5px; color: var(--text-muted); }
+        
+        #saveStatus {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 38px;
+            height: 38px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .icon-spin { animation: spin 1.2s linear infinite; }
+
+        /* --- CSS ĐỊNH DẠNG BẢN IN A4 NGANG --- */
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            
+            body { 
+                margin: 0; 
+                background-color: #fff; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            
+            /* Ẩn các thành phần không cần thiết trên bản in */
+            .controls, .legend, .tips, .w-del, #saveStatus, .action-buttons, .hide-on-print { 
+                display: none !important; 
+            }
+
+            /* --- 1. ÉP BẢNG THÀNH 2D PHẲNG, KẺ VIỀN ĐEN TOÀN BỘ --- */
+            table#timesheetTable {
+                border-collapse: collapse !important; 
+                border: 1px solid #000 !important; 
+            }
+            
+            table#timesheetTable th, 
+            table#timesheetTable td {
+                border: 1px solid #000 !important; 
+                box-shadow: none !important;       
+                border-radius: 0 !important;       
+            }
+
+            /* Triệt tiêu hiệu ứng đổ bóng 3D của cột Chức vụ ở bản web */
+            table#timesheetTable .col-role,
+            table#timesheetTable th.col-role,
+            table#timesheetTable td.col-role {
+                box-shadow: none !important; 
+                border-right: 1px solid #000 !important;
+            }
+
+            /* --- 2. LOẠI BỎ MÀU NỀN CỦA CÁC Ô THƯỜNG --- */
+            table#timesheetTable, 
+            table#timesheetTable .summary-col,
+            table#timesheetTable tr:nth-child(even) td,
+            table#timesheetTable tr:hover td {
+                background-color: transparent !important;
+                background: none !important;
+                color: #000 !important;
+            }
+
+            /* Triệt tiêu màu chữ do Javascript tự động gán */
+            table#timesheetTable input,
+            table#timesheetTable input.day-input,
+            td#stdTotalSum {
+                color: #000 !important;
+                background-color: transparent !important;
+                -webkit-text-fill-color: #000 !important;
+            }
+
+            /* --- 3. ĐỔ MÀU NỀN RIÊNG CHO CỘT CHỦ NHẬT KHI IN --- */
+            table#timesheetTable th.sunday, 
+            table#timesheetTable td.sunday,
+            table#timesheetTable td.sunday input {
+                background-color: #e2e8f0 !important; 
+                background: #e2e8f0 !important;
+            }
+
+            /* --- 4. CẤU HÌNH FONT CHỮ VÀ BỐ CỤC --- */
+            /* Ghi đè Font chữ, cỡ chữ tương tự như bản xlsx (khoảng 10pt) */
+            body, .header-info strong, 
+            table, th, td, table input, .print-footer, .sunday {
+                font-family: "Times New Roman", Times, serif !important;
+                font-size: 10pt !important;
+                color: #000 !important;
+            }
+
+            /* Sửa chữ bị khuất trong bảng */
+            input.day-input, .summary-col {
+                text-transform: uppercase;
+                font-family: "Times New Roman", Times, serif !important;
+                font-size: 8.5pt !important; 
+                letter-spacing: -0.5px !important; 
+                color: #000 !important;
+            }
+
+            /* Căn giữa tuyệt đối cho tiêu đề và chữ tháng... năm */
+            .title-section {
+                display: block !important;
+                text-align: center !important;
+                width: 100% !important;
+                margin-bottom: 15px !important;
+            }
+
+            /* Tiêu đề giống xlsx: Cỡ 14pt, In đậm, Màu đen */
+            .title-section h2 { 
+                display: block !important;
+                font-family: "Times New Roman", Times, serif !important;
+                font-size: 14pt !important; 
+                font-weight: bold !important;
+                color: #000 !important; 
+                margin: 0 0 5px 0 !important; 
+                text-align: center !important;
+            }
+            
+            /* Căn giữa tháng... năm */
+            .month-year-controls { 
+                display: block !important;
+                font-family: "Times New Roman", Times, serif !important;
+                font-weight: normal !important; 
+                font-style: italic !important; 
+                font-size: 10pt !important;
+                color: #000 !important; 
+                text-align: center !important;
+                width: 100% !important;
+            }
+            
+            .month-year-controls select, .month-year-controls input { 
+                display: inline-block !important; 
+                font-family: "Times New Roman", Times, serif !important;
+                border: none !important; 
+                background: transparent !important; 
+                appearance: none !important; 
+                -webkit-appearance: none !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                font-size: 10pt !important;
+                font-weight: normal !important; 
+                font-style: italic !important; 
+                color: #000 !important; 
+                text-align: center !important;
+            }
+            
+            .month-year-controls select { width: 16px !important; }
+            .month-year-controls input { width: 32px !important; }
+            
+            /* Ẩn mũi tên tăng/giảm số trên bản in */
+            .month-year-controls input::-webkit-outer-spin-button,
+            .month-year-controls input::-webkit-inner-spin-button {
+                -webkit-appearance: none !important; margin: 0 !important;
+            }
+            
+            /* Reset container để hiển thị toàn bộ bảng */
+            .table-container { max-height: none !important; overflow: visible !important; border: none !important; }
+            table { min-width: 100% !important; width: 100% !important; border-collapse: collapse !important; }
+            thead, tfoot, .col-tt, .col-name, .col-role, thead th.col-tt, thead th.col-name, thead th.col-role { position: static !important; }
+			tfoot { display: table-row-group !important; }
+            
+            /* Khung bảng - Dòng kẻ đen mảnh (0.5pt) */
+            th, td { 
+                border: 0.5pt solid #000 !important; 
+                height: 22px !important; 
+                padding: 0 !important; 
+            }
+
+            .col-role { border-right: 0.5pt solid #000 !important; }
+            
+            /* Reset cấu hình CHỈ CHO thẻ input TRONG BẢNG in */
+            table input { 
+                border: none !important; 
+                background: transparent !important; 
+                box-shadow: none !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                width: 100% !important; /* Ép input trong bảng tràn full ngang */
+                box-sizing: border-box !important; 
+            }
+            
+            /* --- SỬA LỖI XUỐNG DÒNG "Khoa/Phòng" --- */
+            input.dept-input { 
+                border: none !important; 
+                background: transparent !important;
+                font-family: "Times New Roman", Times, serif !important;
+                font-size: 10pt !important; 
+                letter-spacing: normal !important;
+                width: 250px !important; /* Đặt lại width cố định, không để 100% */
+                padding: 0 !important;
+                margin-left: 5px !important;
+            }
+            
+            .col-name input, .col-role input { font-size: 10pt !important; letter-spacing: normal !important; }
+        }
+        
+        .print-footer { display: none; }
+
+        @media print {
+            .print-footer { 
+                display: block !important; 
+                margin-top: 15px; 
+                font-family: "Times New Roman", Times, serif; 
+                font-size: 10pt !important;
+                page-break-inside: avoid; 
+            }
+            .pf-body { display: flex; justify-content: space-between; align-items: flex-start; }
+            .pf-legend-wrapper { width: 40%; }
+            .pf-legend-grid { display: grid; grid-template-columns: auto auto; column-gap: 25px; row-gap: 5px; }
+            .pf-signatures { display: flex; width: 60%; justify-content: space-around; text-align: center; }
+            .pf-sig-block { display: flex; flex-direction: column; align-items: center; }
+            .pf-sig-block b { font-size: 10pt !important; }
+        }
+		tbody tr:nth-child(even) td { 
+            background-color: #f8f9fa; 
+        }
+
+        tbody tr:hover td { 
+            background-color: #f1f8ff !important; 
+        }
+
+        .col-role { 
+            border-right: 1px solid var(--border-color) !important;
+            box-shadow: 3px 0 5px -2px rgba(0,0,0,0.1); 
+        }
+
+        .summary-col { 
+            background-color: #eef2f8 !important;
+        }
+
+        .saturday { 
+            background-color: #f1f3f4 !important; 
+        }
+
+        td input.day-input:focus {
+            background-color: #fff !important;
+            box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-info">
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <strong>CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ TRƯỜNG ĐỨC YB</strong><br>
+                <strong>BỆNH VIỆN ĐA KHOA TRƯỜNG ĐỨC</strong><br>
+                <div style="display: flex; align-items: center; margin-top: 3px; white-space: nowrap;">
+                    Khoa/phòng/Bộ phận: <input type="text" id="departmentName" class="dept-input" value="" oninput="formatTitleCaseRT(this)" onchange="triggerAutoSave()">
+                </div>
+            </div>
+            <div class="hide-on-print" style="text-align: center; color: var(--text-main); font-size: 12px;">
+                <strong>Mẫu số: 02a- LĐTL</strong><br>
+                (Ban hành theo Thông tư số: 200/2014/TT-BTC ngày<br>22/12/2014 của BTC)
+            </div>
+        </div>
+    </div>
+
+    <div class="title-section">
+        <h2 style="color: #0056b3;">BẢNG CHẤM CÔNG HÀNH CHÍNH</h2>
+        <div class="month-year-controls">
+            Tháng <select id="monthSelect"></select> năm <input type="number" id="yearSelect">
+        </div>
+    </div>
+
+    <div class="action-buttons" style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+        <button onclick="addRow()">+ Thêm nhân sự</button>
+    </div>
+
+    <div class="table-container">
+        <table id="timesheetTable">
+            <thead></thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot></tfoot>
+        </table>
+    </div>
+    
+    <div id="printFooter" class="print-footer">
+        <div class="pf-body">
+            <div class="pf-legend-wrapper">
+                <div class="pf-legend-title" style="margin-bottom: 5px;"><b>Ký hiệu chấm công</b></div>
+                <div class="pf-legend-grid">
+                    <div>Làm cả ngày : X</div><div>Ốm, đau : Ô</div>
+                    <div>Nửa ngày : X/2</div><div>Thai sản : TS</div>
+                    <div>Đi công tác : CT</div><div>Nghỉ dưỡng sức : DS</div>
+                    <div>Nghỉ phép : P</div><div>Nghỉ ốm dài ngày : Ôdn</div>
+                    <div>Nghỉ lễ, tết : L</div><div>Nghỉ không lương : K</div>
+                    <div>Nghỉ nửa ngày KL : 1/2K</div><div></div>
+                </div>
+            </div>
+            <div class="pf-signatures">
+                <div class="pf-sig-block">
+                    <div style="visibility: hidden; font-style: italic; margin-bottom: 5px;">Ngày ... tháng ... năm ...</div>
+                    <b>Người chấm công</b><br><i>(Ký, họ và tên)</i>
+                </div>
+                <div class="pf-sig-block">
+                    <div style="visibility: hidden; font-style: italic; margin-bottom: 5px;">Ngày ... tháng ... năm ...</div>
+                    <b>Phụ trách bộ phận</b><br><i>(Ký, họ và tên)</i>
+                </div>
+                <div class="pf-sig-block">
+                    <div id="printDate" style="font-style: italic; margin-bottom: 5px;">Ngày ... tháng ... năm ...</div>
+                    <b>Người duyệt</b><br><i>(Ký, họ và tên)</i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px;">
+        <div class="legend" style="margin-top: 0;">
+            <div style="padding: 10px; display: inline-block; line-height: 1.8;">
+                <b>Ký hiệu chấm công:</b><br>
+                Làm cả ngày: <b>X</b> &nbsp;|&nbsp; Nửa ngày: <b>X/2</b> &nbsp;|&nbsp; Đi công tác: <b style="color: #1e8e3e;">CT</b> &nbsp;|&nbsp; Nghỉ không lương: <b style="color: #d93025;">K</b> &nbsp;|&nbsp; Nghỉ nửa ngày không lương: <b style="color: #d93025;">1/2K</b><br> 
+                Nghỉ phép: <b style="color: #f29900;">P</b> &nbsp;|&nbsp; Nghỉ lễ, tết: <b style="color: #f29900;">L</b><br>
+                Ốm, đau: <b style="color: #9c27b0;">Ô</b> &nbsp;|&nbsp; Thai sản: <b style="color: #9c27b0;">TS</b> &nbsp;|&nbsp; Nghỉ dưỡng sức sau sinh: <b style="color: #9c27b0;">DS</b> &nbsp;|&nbsp; Nghỉ ốm dài ngày: <b style="color: #9c27b0;">Ôdn</b>
+            </div>
+        </div>
+        <div class="action-buttons" style="display: flex; padding-bottom: 10px;">
+            <button onclick="window.print()" style="background-color: #5f6368; margin-right: 10px;">In khổ A4</button>
+            <button class="btn-excel" onclick="exportToExcel()" style="margin-right: 0;">↓ Xuất Excel</button>
+        </div>
+    </div>
+    
+    <div id="saveStatus" title="Trạng thái kết nối"></div>
+    
+<script>
+    // --- CẤU HÌNH FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQTzMCGYojJyMrI84dVr6nNVk_Mz6dDC8",
+      authDomain: "cong-de070.firebaseapp.com",
+      databaseURL: "https://cong-de070-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "cong-de070",
+      storageBucket: "cong-de070.firebasestorage.app",
+      messagingSenderId: "442732162211",
+      appId: "1:442732162211:web:a9d944f79022cddb73e316"
+    };
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    
+    let staffData = [];
+    let saveTimeout = null;
+    const validStdCodes = ['X', 'X/2', 'CT', 'P', 'L', 'Ô', 'TS', 'K', '1/2K', 'DS', 'ÔDN'];
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    const departmentInput = document.getElementById('departmentName');
+    const thead = document.querySelector('#timesheetTable thead');
+    const tbody = document.getElementById('tableBody');
+    const tfoot = document.querySelector('#timesheetTable tfoot');
+    const statusEl = document.getElementById('saveStatus');
+    const iconSync = `<svg class="icon-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f29900" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>`;
+    const iconCloudCheck = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e8e3e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><polyline points="9 15 12 18 17 12"></polyline></svg>`;
+    const iconError = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d93025" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+    const now = new Date();
+    for (let i = 1; i <= 12; i++) {
+        let opt = document.createElement('option'); opt.value = i; opt.text = i;
+        if (i === now.getMonth() + 1) opt.selected = true;
+        monthSelect.appendChild(opt);
+    }
+    yearSelect.value = now.getFullYear();
+
+    monthSelect.addEventListener('change', loadDataAndRender);
+    yearSelect.addEventListener('change', loadDataAndRender);
+
+    tbody.addEventListener('mouseover', (e) => {
+        if (e.target.classList.contains('day-input')) {
+            const input = e.target;
+            const day = input.dataset.day;
+            const row = input.closest('tr');
+            row.querySelector('.col-name').classList.add('highlight-header');
+            const daysRow = document.getElementById('daysRow');
+            const dowRow = document.getElementById('dowRow');
+            if(daysRow && dowRow) {
+                daysRow.cells[day-1].classList.add('highlight-header');
+                dowRow.cells[day-1].classList.add('highlight-header');
+            }
+        }
+    });
+	tbody.addEventListener('keydown', (e) => {
+		const input = e.target;
+		if (!input.classList.contains('day-input')) return;
+
+		const td = input.closest('td');
+		const tr = td.closest('tr');
+		
+		// Lấy vị trí cột và dòng hiện tại
+		const colIndex = Array.from(tr.children).indexOf(td);
+		const rows = Array.from(tbody.querySelectorAll('tr'));
+		const rowIndex = rows.indexOf(tr);
+
+		let nextInput = null;
+
+		switch (e.key) {
+			case 'ArrowRight':
+				// Sang phải
+				nextInput = tr.children[colIndex + 1]?.querySelector('input');
+				break;
+			case 'ArrowLeft':
+				// Sang trái
+				nextInput = tr.children[colIndex - 1]?.querySelector('input');
+				break;
+			case 'ArrowDown':
+				// Xuống dưới
+				if (rows[rowIndex + 1]) {
+					nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input');
+				}
+				break;
+			case 'ArrowUp':
+				// Lên trên
+				if (rows[rowIndex - 1]) {
+					nextInput = rows[rowIndex - 1].children[colIndex]?.querySelector('input');
+				}
+				break;
+			case 'Enter':
+				// Bấm Enter cũng sẽ tự nhảy xuống dòng dưới
+				if (rows[rowIndex + 1]) {
+					nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input');
+				}
+				break;
+		}
+
+		if (nextInput) {
+			e.preventDefault(); // Ngăn chặn hành vi cuộn trang mặc định
+			nextInput.focus();
+			nextInput.select(); // Bôi đen sẵn chữ bên trong để gõ đè luôn
+		}
+	});
+    tbody.addEventListener('mouseout', (e) => {
+        if (e.target.classList.contains('day-input')) {
+            document.querySelectorAll('.highlight-header').forEach(el => el.classList.remove('highlight-header'));
+        }
+    });
+
+    function getDayOfWeekStr(day, month, year) {
+        const date = new Date(year, month - 1, day);
+        return date.getDay() === 0 ? 'CN' : 'T' + (date.getDay() + 1);
+    }
+
+    function loadDataAndRender() {
+        const currentMonth = parseInt(monthSelect.value);
+        const currentYear = parseInt(yearSelect.value);
+        const path = `timesheets/${currentYear}/${currentMonth}`;
+
+        statusEl.innerHTML = iconSync;
+        statusEl.title = "Đang tải dữ liệu...";
+
+        db.ref(path).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                departmentInput.value = data.departmentName || "";
+                
+                // [SỬA LỖI 1]: Lọc bỏ an toàn các phần tử null do Firebase tự sinh ra khi xóa dòng
+                let rawData = data.staffData || [];
+                let parsedData = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                staffData = parsedData.filter(staff => staff != null);
+                
+                renderTable();
+                statusEl.innerHTML = iconCloudCheck;
+                statusEl.title = "Dữ liệu đã đồng bộ";
+            } else {
+                // [SỬA LỖI 2]: Quét lùi tìm tháng gần nhất có dữ liệu thay vì chỉ lùi đúng 1 tháng
+                findLatestAvailableData(currentMonth, currentYear);
+            }
+        }).catch((error) => {
+            console.error("Lỗi khi tải dữ liệu từ Firebase:", error);
+            statusEl.innerHTML = iconError;
+            statusEl.title = "Lỗi tải dữ liệu!";
+            staffData = [{ name: '', role: 'Hành chính', days: {} }];
+            renderTable();
+        });
+    }
+	function findLatestAvailableData(startMonth, startYear) {
+        let m = startMonth - 1;
+        let y = startYear;
+        if (m === 0) { m = 12; y--; }
+
+        let attempts = 0;
+        const maxAttempts = 12;
+
+        function searchNext() {
+            if (attempts >= maxAttempts) {
+                // Đã lùi 12 tháng nhưng vẫn không có dữ liệu nào -> Khởi tạo bảng trắng
+                staffData = [{ name: '', role: 'Hành chính', days: {} }];
+                renderTable();
+                triggerAutoSave();
+                statusEl.innerText = "Tạo mới dữ liệu tháng ✓";
+                statusEl.style.color = "#1a73e8";
+                return;
+            }
+
+            db.ref(`timesheets/${y}/${m}`).once('value').then((prevSnap) => {
+                if (prevSnap.exists()) {
+                    const prevData = prevSnap.val();
+                    departmentInput.value = prevData.departmentName || "";
+                    
+                    let rawPrevStaff = prevData.staffData || [];
+                    let prevStaffList = Array.isArray(rawPrevStaff) ? rawPrevStaff : Object.values(rawPrevStaff);
+                    
+                    // Lọc bỏ phần tử null để tránh lỗi crash Javascript
+                    prevStaffList = prevStaffList.filter(staff => staff != null);
+
+                    // Chỉ chép Họ tên và Chức vụ, bỏ lại dữ liệu ngày chấm công cũ
+                    staffData = prevStaffList.map(staff => ({
+                        name: staff.name || '',
+                        role: staff.role || '',
+                        days: {} 
+                    }));
+                    
+                    renderTable();
+                    triggerAutoSave(); 
+                    
+                    statusEl.innerText = `Đã chép từ T${m}/${y} ✓`;
+                    statusEl.style.color = "#1a73e8";
+                } else {
+                    // Nếu tháng này vẫn trống, tự động lùi thêm 1 tháng nữa để tìm kiếm
+                    m--;
+                    if (m === 0) { m = 12; y--; }
+                    attempts++;
+                    searchNext();
+                }
+            });
+        }
+
+        searchNext();
+    }
+    function triggerAutoSave() {
+        const rows = tbody.querySelectorAll('tr');
+        staffData = Array.from(rows).map(row => {
+            let days = {};
+            row.querySelectorAll('.day-input').forEach(i => { 
+                if(i.value) days[i.dataset.day] = i.value.toUpperCase(); 
+            });
+            return {
+                name: row.cells[1].querySelector('input').value,
+                role: row.cells[2].querySelector('input').value,
+                days: days
+            };
+        });
+        
+        calculate();
+        statusEl.innerHTML = iconSync;
+        statusEl.title = "Đang lưu...";
+        
+        const payload = {
+            departmentName: departmentInput.value,
+            staffData: staffData,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+        };
+        
+        saveToFirebase(payload);
+    }
+
+    async function saveToFirebase(payload) {
+        if(firebaseConfig.databaseURL.includes("YOUR_PROJECT_ID")) {
+            statusEl.innerText = "Thiếu Config Firebase!"; 
+            statusEl.style.color = "#d93025"; 
+            return;
+        }
+
+        const currentMonth = parseInt(monthSelect.value);
+        const currentYear = parseInt(yearSelect.value);
+        const path = `timesheets/${currentYear}/${currentMonth}`;
+
+        try {
+            await db.ref(path).set(payload);
+            statusEl.innerHTML = iconCloudCheck; 
+            statusEl.title = "Đã lưu vào DB";
+        } catch (error) {
+            console.error("Lỗi đồng bộ Firebase:", error);
+            statusEl.innerHTML = iconError;
+            statusEl.title = "Lỗi đồng bộ DB!";
+        }
+    }
+
+    function renderTable() {
+        const month = parseInt(monthSelect.value);
+        const year = parseInt(yearSelect.value);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        
+        const printDateEl = document.getElementById('printDate');
+        if(printDateEl) {
+            printDateEl.innerText = `Ngày ${daysInMonth} tháng ${String(month).padStart(2, '0')} năm ${year}`;
+        }
+
+        thead.innerHTML = `
+            <tr>
+                <th class="col-tt" rowspan="3">TT</th>
+                <th class="col-name" rowspan="3">Họ và tên</th>
+                <th class="col-role" rowspan="3">Chức vụ/<br>Bộ phận</th>
+                <th colspan="${daysInMonth}">Ngày trong tháng</th>
+                <th rowspan="3" style="width:40px; font-size:11px">Tổng<br>cộng<br>ngày<br>công</th>
+                <th colspan="4">Quy ra công</th>
+                <th class="w-del" rowspan="3" style="width:40px">Xóa</th>
+            </tr>
+            <tr id="daysRow"></tr>
+            <tr id="dowRow"></tr>
+        `;
+        
+        let daysRow = document.getElementById('daysRow');
+        let dowRow = document.getElementById('dowRow');
+        for (let d = 1; d <= daysInMonth; d++) {
+            let dowStr = getDayOfWeekStr(d, month, year);
+            /* Đã thêm class đánh dấu sunday cho ô số ngày */
+            daysRow.innerHTML += `<th class="${dowStr==='CN'?'sunday':''}" style="width:24px">${d}</th>`;
+            dowRow.innerHTML += `<th class="${dowStr==='CN'?'sunday':''}" style="font-size:10.5px">${dowStr}</th>`;
+        }
+        
+        thead.rows[1].innerHTML += `
+            <th rowspan="2" style="width:45px; font-size:10px">Số công<br>đi công tác<br>hưởng lương</th>
+            <th rowspan="2" style="width:45px; font-size:10px">Số công<br>hưởng lương<br>thời gian</th>
+            <th rowspan="2" style="width:45px; font-size:10px">Số công<br>nghỉ hưởng<br>100% lương</th>
+            <th rowspan="2" style="width:45px; font-size:10px">Số công<br>hưởng<br>BHXH</th>`;
+
+        tfoot.innerHTML = `
+            <tr class="total-row">
+                <td colspan="${3 + daysInMonth}" style="text-align: center; font-weight: bold; letter-spacing: 0.5px;">Tổng cộng</td>
+                <td id="stdTotalSum" style="color: #d93025;">0</td>
+                <td id="stdCTSum">0</td>
+                <td id="stdTimeSum">0</td>
+                <td id="stdPSum">0</td>
+                <td id="stdBHXHSum">0</td>
+                <td class="w-del"></td>
+            </tr>`;
+        
+        renderBody(daysInMonth, month, year);
+    }
+
+    function renderBody(daysInMonth, month, year) {
+        tbody.innerHTML = '';
+        if(!staffData || staffData.length === 0) staffData = [{name: '', role: 'Hành chính', days: {}}];
+        
+        staffData.forEach((staff, idx) => {
+            const tr = document.createElement('tr');
+            let daysHtml = '';
+            for(let d=1; d<=daysInMonth; d++) {
+                let isSun = getDayOfWeekStr(d, month, year) === 'CN';
+                let val = (staff.days && staff.days[d]) ? staff.days[d] : '';
+                let displayVal = val === '1/2K' ? '1/2K' : val;
+                
+                daysHtml += `<td class="${isSun?'sunday':''}">
+                                <input type="text" class="day-input" data-day="${d}" value="${displayVal}" 
+                                onfocus="this.dataset.justFocused='true'" onclick="handleInputClick(this)"
+                                oncontextmenu="clearInput(event, this)" oninput="validateInput(this)" onblur="formatInput(this)">
+                             </td>`;
+            }
+
+            tr.innerHTML = `
+                <td class="col-tt">${idx+1}</td>
+                <td class="col-name"><input type="text" value="${staff.name || ''}" oninput="formatTitleCaseRT(this)" onchange="triggerAutoSave()"></td>
+                <td class="col-role"><input type="text" value="${staff.role || ''}" oninput="formatSentenceCaseRT(this)" onchange="triggerAutoSave()"></td>
+                ${daysHtml}
+                <td class="summary-col std-total-val" style="color: #d93025; font-weight:bold;"></td>
+                <td class="summary-col std-ct-val"></td><td class="summary-col std-time-val"></td>
+                <td class="summary-col std-p-val"></td><td class="summary-col std-bhxh-val"></td>
+                <td class="w-del"><button onclick="deleteRow(${idx})" class="btn-del">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.day-input').forEach(applyColor);
+        calculate();
+    }
+
+    function handleInputClick(input) {
+        if (input.dataset.justFocused === 'true') { 
+            input.dataset.justFocused = 'false'; input.select(); return; 
+        }
+        const cycle = ['', 'X', 'X/2', 'P', 'L', 'CT', 'Ô', 'TS', 'DS', 'ÔDN', 'K', '1/2K'];
+        let idx = cycle.indexOf(input.value.toUpperCase());
+        if(idx === -1) idx = 0;
+        let nextVal = cycle[(idx + 1) % cycle.length];
+        if (nextVal === '1/2K') input.value = '1/2K';
+		else input.value = nextVal;
+        applyColor(input); triggerAutoSave(); input.select();
+    }
+
+    function clearInput(event, input) { event.preventDefault(); input.value = ''; applyColor(input); triggerAutoSave(); }
+
+    function applyColor(input) {
+        let val = input.value.toUpperCase();
+        if (['P', 'L'].includes(val)) input.style.color = '#f29900'; 
+        else if (['Ô', 'TS', 'DS', 'ÔDN'].includes(val)) input.style.color = '#9c27b0'; 
+        else if (val === 'CT') input.style.color = '#1e8e3e'; 
+        else if (['K', '1/2K'].includes(val)) input.style.color = '#d93025'; 
+        else input.style.color = 'var(--text-main)'; 
+    }
+
+    function validateInput(input) { 
+		input.value = input.value.toUpperCase(); // Ép in hoa ngay lập tức khi gõ
+		applyColor(input); 
+	}
+
+    function formatInput(input) {
+		let val = input.value.toUpperCase();
+		if (!validStdCodes.includes(val) && val !== '') input.value = '';
+		// Đã gỡ bỏ dòng: else if (val === 'ÔDN') input.value = 'Ôdn';
+		else if (val === '1/2K') input.value = '1/2K'; 
+		
+		input.dataset.justFocused = 'false'; 
+		applyColor(input); triggerAutoSave();
+	}
+
+    function calculate() {
+        let sTotal=0, sCT=0, sTime=0, sP=0, sBHXH=0;
+        tbody.querySelectorAll('tr').forEach(row => {
+            let tTime=0, tCT=0, tP=0, tBHXH=0;
+            row.querySelectorAll('.day-input').forEach(i => {
+                let v = i.value.toUpperCase();
+                if(v==='X') tTime += 1;
+                else if(v==='X/2') tTime += 0.5;
+                else if(v==='P' || v==='L') tP += 1;
+                else if(v==='CT') tCT += 1;
+                else if(['Ô', 'TS', 'DS', 'ÔDN'].includes(v)) tBHXH += 1;
+            });
+            let tTotal = tTime + tCT + tP;
+            row.querySelector('.std-total-val').innerText = tTotal || '';
+            row.querySelector('.std-ct-val').innerText = tCT || '';
+            row.querySelector('.std-time-val').innerText = tTime || '';
+            row.querySelector('.std-p-val').innerText = tP || '';
+            row.querySelector('.std-bhxh-val').innerText = tBHXH || '';
+            sTotal+=tTotal; sCT+=tCT; sTime+=tTime; sP+=tP; sBHXH+=tBHXH;
+        });
+        document.getElementById('stdTotalSum').innerText = sTotal || '';
+        document.getElementById('stdCTSum').innerText = sCT || '';
+        document.getElementById('stdTimeSum').innerText = sTime || '';
+        document.getElementById('stdPSum').innerText = sP || '';
+        document.getElementById('stdBHXHSum').innerText = sBHXH || '';
+    }
+	// Hàm viết hoa chữ cái đầu của MỖI TỪ (Dành cho Tên và Khoa/Phòng)
+    function formatTitleCaseRT(input) {
+        let start = input.selectionStart; // Ghi nhớ vị trí con trỏ chuột
+        let val = input.value;
+        
+        // Tách từ theo khoảng trắng để không làm mất dấu cách người dùng đang gõ
+        let words = val.split(' ');
+        let newVal = words.map(w => {
+            if (w.length === 0) return w;
+            return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        }).join(' ');
+
+        if (val !== newVal) {
+            input.value = newVal;
+            input.setSelectionRange(start, start); // Đưa con trỏ về đúng vị trí cũ, chống nhảy chữ
+        }
+    }
+
+    // Hàm viết hoa chữ cái đầu câu (Real-time khi đang gõ)
+    function formatSentenceCaseRT(input) {
+        let start = input.selectionStart;
+        let val = input.value;
+        
+        if (val.length > 0) {
+            let newVal = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+            if (val !== newVal) {
+                input.value = newVal;
+                input.setSelectionRange(start, start); // Giữ nguyên vị trí con trỏ
+            }
+        }
+    }
+    window.addRow = function() { staffData.push({name:'', role:'Hành chính', days:{}}); renderTable(); triggerAutoSave(); }
+    window.deleteRow = function(idx) { if(confirm("Xóa nhân sự?")) { staffData.splice(idx,1); renderTable(); triggerAutoSave(); } }
+
+    window.exportToExcel = async function() {
+        const month = parseInt(monthSelect.value); const year = parseInt(yearSelect.value);
+        const daysInMonth = new Date(year, month, 0).getDate(); const deptName = departmentInput.value;
+        const totalCols = 3 + daysInMonth + 1 + 4;
+        const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet(`HC_T${month}-${year}`);
+
+        sheet.pageSetup.paperSize = 9; sheet.pageSetup.orientation = 'landscape'; 
+        sheet.pageSetup.margins = { top: 0.4 / 2.54, bottom: 0, left: 0.8 / 2.54, right: 0.8 / 2.54, header: 0.8 / 2.54, footer: 0.8 / 2.54 };
+
+        sheet.getColumn(1).width = 4; sheet.getColumn(2).width = 20; sheet.getColumn(3).width = 10; 
+        for(let i=1; i<=daysInMonth; i++) sheet.getColumn(3+i).width = 3; 
+        for(let i=1; i<=5; i++) sheet.getColumn(3+daysInMonth+i).width = 6; 
+
+        const fontBase = { name: 'Times New Roman', size: 10 }; 
+        const fontBold = { name: 'Times New Roman', size: 10, bold: true };
+        const fontItalic = { name: 'Times New Roman', size: 10, italic: true };
+        
+        const alignCenterWrap = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        const alignLeftWrap = { horizontal: 'left', vertical: 'middle', wrapText: true };
+        const alignCenterData = { horizontal: 'center', vertical: 'middle' };
+        const alignLeftData = { horizontal: 'left', vertical: 'middle' };
+        
+        const borderStyle = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        const sundayFill = { type: 'pattern', pattern:'solid', fgColor:{arg:'FF8EA9DB'} };
+
+        sheet.mergeCells(1, 1, 1, 10); sheet.getCell(1, 1).value = "CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ TRƯỜNG ĐỨC YB"; sheet.getCell(1, 1).font = fontBold; sheet.getCell(1, 1).alignment = { vertical: 'middle' };
+        sheet.mergeCells(1, totalCols - 11, 1, totalCols); sheet.getCell(1, totalCols - 11).value = "Mẫu số: 02a- LĐTL"; sheet.getCell(1, totalCols - 11).font = fontBold; sheet.getCell(1, totalCols - 11).alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet.mergeCells(2, 1, 2, 10); sheet.getCell(2, 1).value = "BỆNH VIỆN ĐA KHOA TRƯỜNG ĐỨC"; sheet.getCell(2, 1).font = fontBold; sheet.getCell(2, 1).alignment = { vertical: 'middle' };
+        sheet.mergeCells(2, totalCols - 11, 2, totalCols); sheet.getCell(2, totalCols - 11).value = "(Ban hành theo Thông tư số: 200/2014/TT-BTC ngày"; sheet.getCell(2, totalCols - 11).font = fontBase; sheet.getCell(2, totalCols - 11).alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet.mergeCells(3, 1, 3, 10); sheet.getCell(3, 1).value = "Khoa/phòng/Bộ phận: " + deptName; sheet.getCell(3, 1).font = fontBase; sheet.getCell(3, 1).alignment = { vertical: 'middle' };
+        sheet.mergeCells(3, totalCols - 11, 3, totalCols); sheet.getCell(3, totalCols - 11).value = "22/12/2014 của BTC)"; sheet.getCell(3, totalCols - 11).font = fontBase; sheet.getCell(3, totalCols - 11).alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet.mergeCells(5, 1, 5, totalCols); sheet.getCell(5, 1).value = "BẢNG CHẤM CÔNG HÀNH CHÍNH"; sheet.getCell(5, 1).font = { name: 'Times New Roman', size: 14, bold: true, color: { arg: 'FF0056B3' } }; sheet.getCell(5, 1).alignment = { horizontal: 'center' };
+        sheet.mergeCells(6, 1, 6, totalCols); sheet.getCell(6, 1).value = `Tháng ${month} năm ${year}`; sheet.getCell(6, 1).font = { name: 'Times New Roman', size: 10, italic: true, color: { arg: 'FF0056B3' } }; sheet.getCell(6, 1).alignment = { horizontal: 'center' };
+
+        const startRow = 8; 
+        sheet.mergeCells(startRow, 1, startRow+2, 1); sheet.getCell(startRow, 1).value = "TT";
+        sheet.mergeCells(startRow, 2, startRow+2, 2); sheet.getCell(startRow, 2).value = "Họ và tên";
+        sheet.mergeCells(startRow, 3, startRow+2, 3); sheet.getCell(startRow, 3).value = "Chức\nvụ/Bộ\nphận";
+        sheet.mergeCells(startRow, 4, startRow, 3+daysInMonth); sheet.getCell(startRow, 4).value = "Ngày trong tháng";
+        sheet.mergeCells(startRow, 4+daysInMonth, startRow+2, 4+daysInMonth); sheet.getCell(startRow, 4+daysInMonth).value = "Tổng cộng\nngày công";
+        sheet.mergeCells(startRow, 5+daysInMonth, startRow, totalCols); sheet.getCell(startRow, 5+daysInMonth).value = "Quy ra công";
+        
+        const sumHeaders = ["Số công\nđi công tác\nhưởng lương", "Số công\nhưởng lương\nthời gian", "Số công\nnghỉ hưởng\n100% lương", "Số công\nhưởng\nBHXH"];
+        for(let i=0; i<4; i++) {
+            sheet.mergeCells(startRow+1, 5+daysInMonth+i, startRow+2, 5+daysInMonth+i);
+            sheet.getCell(startRow+1, 5+daysInMonth+i).value = sumHeaders[i];
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            let dowStr = getDayOfWeekStr(d, month, year);
+            sheet.getCell(startRow+1, 3+d).value = d; sheet.getCell(startRow+2, 3+d).value = dowStr;
+            if (dowStr === 'CN') { sheet.getCell(startRow+1, 3+d).fill = sundayFill; sheet.getCell(startRow+2, 3+d).fill = sundayFill; }
+        }
+        for (let r = startRow; r <= startRow+2; r++) { 
+            for (let c = 1; c <= totalCols; c++) { 
+                let cell = sheet.getCell(r, c); 
+                cell.font = fontBold; 
+                cell.alignment = alignCenterWrap; 
+                cell.border = borderStyle; 
+            } 
+        }
+
+        let currentRow = startRow + 3;
+        staffData.forEach((staff, index) => {
+            sheet.getCell(currentRow, 1).value = index + 1; sheet.getCell(currentRow, 2).value = staff.name; sheet.getCell(currentRow, 3).value = staff.role;
+            let tTime=0, tCT=0, tP=0, tBHXH=0; 
+            for(let d=1; d<=daysInMonth; d++) {
+                let val = (staff.days && staff.days[d]) ? staff.days[d] : '';
+                let displayVal = val === 'ÔDN' ? 'Ôdn' : (val === '1/2K' ? '1/2K' : val);
+                sheet.getCell(currentRow, 3+d).value = displayVal;
+                if(val==='X') tTime += 1; else if(val==='X/2') tTime += 0.5;
+                else if(val==='P' || val==='L') tP += 1; else if(val==='CT') tCT += 1;
+                else if(['Ô', 'TS', 'DS', 'ÔDN'].includes(val)) tBHXH += 1;
+                if (getDayOfWeekStr(d, month, year) === 'CN') sheet.getCell(currentRow, 3+d).fill = sundayFill;
+            }
+            let tTotal = tTime + tCT + tP;
+            sheet.getCell(currentRow, 4+daysInMonth).value = tTotal || ''; sheet.getCell(currentRow, 5+daysInMonth).value = tCT || '';
+            sheet.getCell(currentRow, 6+daysInMonth).value = tTime || ''; sheet.getCell(currentRow, 7+daysInMonth).value = tP || '';
+            sheet.getCell(currentRow, 8+daysInMonth).value = tBHXH || '';
+            
+            for (let col = 1; col <= totalCols; col++) { 
+                let cell = sheet.getCell(currentRow, col); 
+                cell.font = fontBase; 
+                cell.border = borderStyle; 
+                cell.alignment = (col === 2) ? alignLeftData : alignCenterData; 
+            }
+            
+            sheet.getRow(currentRow).height = 18;
+            currentRow++;
+        });
+
+        sheet.mergeCells(currentRow, 1, currentRow, 3+daysInMonth);
+        let cellTotalLabel = sheet.getCell(currentRow, 1); cellTotalLabel.value = "Tổng cộng"; cellTotalLabel.font = fontBold; cellTotalLabel.alignment = alignCenterData;
+        sheet.getCell(currentRow, 4+daysInMonth).value = parseFloat(document.getElementById('stdTotalSum').innerText) || '';
+        sheet.getCell(currentRow, 5+daysInMonth).value = parseFloat(document.getElementById('stdCTSum').innerText) || '';
+        sheet.getCell(currentRow, 6+daysInMonth).value = parseFloat(document.getElementById('stdTimeSum').innerText) || '';
+        sheet.getCell(currentRow, 7+daysInMonth).value = parseFloat(document.getElementById('stdPSum').innerText) || '';
+        sheet.getCell(currentRow, 8+daysInMonth).value = parseFloat(document.getElementById('stdBHXHSum').innerText) || '';
+        
+        for (let col = 1; col <= totalCols; col++) { 
+            let cell = sheet.getCell(currentRow, col); 
+            cell.border = borderStyle; 
+            if(col >= 4+daysInMonth) { 
+                cell.font = fontBold; 
+                cell.alignment = alignCenterData; 
+            } 
+        }
+        
+        sheet.getRow(currentRow).height = 18;
+
+        currentRow += 2; 
+        let startLegendRow = currentRow;
+        sheet.mergeCells(startLegendRow, 1, startLegendRow, 6);
+        let legendTitle = sheet.getCell(startLegendRow, 1);
+        legendTitle.value = "Ký hiệu chấm công";
+        legendTitle.font = { name: 'Times New Roman', size: 10, bold: true };
+        legendTitle.alignment = { horizontal: 'left', vertical: 'middle' };
+
+        let lastDay = new Date(year, month, 0).getDate();
+        sheet.mergeCells(startLegendRow, totalCols - 7, startLegendRow, totalCols);
+        let dateCell = sheet.getCell(startLegendRow, totalCols - 7);
+        dateCell.value = `Nghĩa Lộ, ngày ${lastDay} tháng ${String(month).padStart(2, '0')} năm ${year}`;
+        dateCell.font = { name: 'Times New Roman', size: 10, italic: true };
+        dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        const legendData = [
+            ["Làm cả ngày : X", "Ốm, đau : Ô"],
+            ["Nửa ngày : X/2", "Thai sản : TS"],
+            ["Đi công tác : CT", "Nghỉ dưỡng sức : DS"],
+            ["Nghỉ phép : P", "Nghỉ ốm dài ngày : Ôdn"],
+            ["Nghỉ lễ, tết : L", "Nghỉ không lương : K"],
+            ["Nghỉ nửa ngày KL : 1/2K", ""]
+        ];
+
+        for (let i = 0; i < legendData.length; i++) {
+            currentRow++;
+            sheet.mergeCells(currentRow, 1, currentRow, 2);
+            sheet.getCell(currentRow, 1).value = legendData[i][0];
+            sheet.mergeCells(currentRow, 3, currentRow, 7);
+            sheet.getCell(currentRow, 3).value = legendData[i][1];
+            sheet.getCell(currentRow, 1).font = fontBase;
+            sheet.getCell(currentRow, 3).font = fontBase;
+        }
+
+        let sigRow = startLegendRow + 1;
+        let posSig1 = 12; let posSig3 = totalCols - 6; let posSig2 = Math.floor((posSig1 + posSig3) / 2);
+        sheet.mergeCells(sigRow, posSig1, sigRow, posSig1 + 4); sheet.getCell(sigRow, posSig1).value = "Người chấm công"; sheet.getCell(sigRow, posSig1).font = fontBold; sheet.getCell(sigRow, posSig1).alignment = { horizontal: 'center' };
+        sheet.mergeCells(sigRow + 1, posSig1, sigRow + 1, posSig1 + 4); sheet.getCell(sigRow + 1, posSig1).value = "(Ký, họ và tên)"; sheet.getCell(sigRow + 1, posSig1).font = fontItalic; sheet.getCell(sigRow + 1, posSig1).alignment = { horizontal: 'center' };
+        sheet.mergeCells(sigRow, posSig2, sigRow, posSig2 + 4); sheet.getCell(sigRow, posSig2).value = "Phụ trách bộ phận"; sheet.getCell(sigRow, posSig2).font = fontBold; sheet.getCell(sigRow, posSig2).alignment = { horizontal: 'center' };
+        sheet.mergeCells(sigRow + 1, posSig2, sigRow + 1, posSig2 + 4); sheet.getCell(sigRow + 1, posSig2).value = "(Ký, họ và tên)"; sheet.getCell(sigRow + 1, posSig2).font = fontItalic; sheet.getCell(sigRow + 1, posSig2).alignment = { horizontal: 'center' };
+        sheet.mergeCells(sigRow, posSig3, sigRow, totalCols); sheet.getCell(sigRow, posSig3).value = "Người duyệt"; sheet.getCell(sigRow, posSig3).font = fontBold; sheet.getCell(sigRow, posSig3).alignment = { horizontal: 'center' };
+        sheet.mergeCells(sigRow + 1, posSig3, sigRow + 1, totalCols); sheet.getCell(sigRow + 1, posSig3).value = "(Ký, họ và tên)"; sheet.getCell(sigRow + 1, posSig3).font = fontItalic; sheet.getCell(sigRow + 1, posSig3).alignment = { horizontal: 'center' };
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Bang_Cham_Cong_HanhChinh_T${month}_${year}.xlsx`);
+    }
+
+    loadDataAndRender();
+</script>
+</body>
+</html>
