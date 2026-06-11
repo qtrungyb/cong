@@ -20,6 +20,10 @@
         }
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 15px 20px; font-size: 12.5px; color: var(--text-main); background-color: #ffffff; }
+        
+        /* CHỐNG BÔI ĐEN CHỮ KHI KÉO CHUỘT */
+        body.is-dragging { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; cursor: crosshair !important; }
+
         .header-info { margin-bottom: 10px; line-height: 1.5; }
         .header-info strong { color: #000; font-size: 13.5px;}
         input.dept-input { font-size: 13px; font-family: inherit; font-weight: 600; border: none; border-bottom: 1px dashed #888; background: transparent; color: #000; width: 250px; outline: none; transition: border-color 0.2s; padding: 0 4px; margin-left: 5px; text-align: left; }
@@ -38,7 +42,6 @@
         .btn-del { background: none; color: var(--text-muted); padding: 4px 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-del:hover { color: red; background: none;}
         
-        /* --- ĐÃ SỬA: Cố định max-height để 15 người mới xuất hiện thanh cuộn dọc --- */
         .table-container { width: 100%; overflow: auto; max-height: 595px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; }
         
         table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1120px; font-size: 12px; background: #fff; }
@@ -52,7 +55,8 @@
         td input.day-input:hover, td input.day-input:focus { background-color: #ffffff; box-shadow: inset 0 0 0 2.5px var(--primary-color) !important; cursor: pointer; z-index: 2; }
         .highlight-header { background-color: var(--highlight-bg) !important; color: var(--highlight-text) !important; font-weight: bold !important; }
 
-        .col-tt { width: 35px; min-width: 35px; max-width: 35px; position: -webkit-sticky; position: sticky; left: 0; z-index: 5; }
+        .col-tt { width: 35px; min-width: 35px; max-width: 35px; position: -webkit-sticky; position: sticky; left: 0; z-index: 5; cursor: pointer; transition: background 0.2s;}
+        .col-tt:hover { background-color: #e8f0fe !important; color: #1a73e8; }
         .col-name { width: 150px; min-width: 150px; max-width: 150px; position: -webkit-sticky; position: sticky; left: 35px; z-index: 5; text-align: left; padding-left: 5px;}
         .col-role { width: 75px; min-width: 75px; max-width: 75px; position: -webkit-sticky; position: sticky; left: 185px; z-index: 5; border-right: 2px solid #9aa0a6 !important; font-size: 11px;}
         thead th.col-tt, thead th.col-name, thead th.col-role { z-index: 15 !important; background-color: var(--bg-header); }
@@ -79,195 +83,74 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .icon-spin { animation: spin 1.2s linear infinite; }
 
+        /* --- CSS CHO TÍNH NĂNG CHỌN VÙNG VÀ KÉO (EXCEL DRAG-TO-FILL) --- */
+        td.cell-selected {
+            background-color: #e8f0fe !important;
+            box-shadow: inset 0 0 0 1.5px #1a73e8 !important;
+        }
+        td.cell-selected input {
+            background-color: transparent !important;
+        }
+        td.cell-fill-target {
+            background-color: #f1f3f4 !important;
+            box-shadow: inset 0 0 0 1.5px #80868b !important;
+        }
+        #fill-handle {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 9px;
+            height: 9px;
+            background-color: #1a73e8;
+            border: 1.5px solid #fff;
+            cursor: crosshair;
+            z-index: 20;
+            border-radius: 1px;
+        }
+        #fill-handle:hover {
+            transform: scale(1.2);
+        }
+
         /* --- CSS ĐỊNH DẠNG BẢN IN A4 NGANG --- */
         @media print {
             @page { size: A4 landscape; margin: 10mm; }
+            body { margin: 0; background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            body { 
-                margin: 0; 
-                background-color: #fff; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            
-            /* Ẩn các thành phần không cần thiết trên bản in */
-            .controls, .legend, .tips, .w-del, #saveStatus, .action-buttons, .hide-on-print { 
+            .controls, .legend, .tips, .w-del, #saveStatus, .action-buttons, .hide-on-print, #fill-handle { 
                 display: none !important; 
             }
 
-            /* --- 1. ÉP BẢNG THÀNH 2D PHẲNG, KẺ VIỀN ĐEN TOÀN BỘ --- */
-            table#timesheetTable {
-                border-collapse: collapse !important; 
-                border: 1px solid #000 !important; 
-            }
-            
-            table#timesheetTable th, 
-            table#timesheetTable td {
-                border: 1px solid #000 !important; 
-                box-shadow: none !important;       
-                border-radius: 0 !important;       
-            }
+            table#timesheetTable { border-collapse: collapse !important; border: 1px solid #000 !important; }
+            table#timesheetTable th, table#timesheetTable td { border: 1px solid #000 !important; box-shadow: none !important; border-radius: 0 !important; }
+            table#timesheetTable .col-role, table#timesheetTable th.col-role, table#timesheetTable td.col-role { box-shadow: none !important; border-right: 1px solid #000 !important; }
+            table#timesheetTable, table#timesheetTable .summary-col, table#timesheetTable tr:nth-child(even) td, table#timesheetTable tr:hover td { background-color: transparent !important; background: none !important; color: #000 !important; }
+            table#timesheetTable input, table#timesheetTable input.day-input, td#stdTotalSum { color: #000 !important; background-color: transparent !important; -webkit-text-fill-color: #000 !important; }
+            table#timesheetTable th.sunday, table#timesheetTable td.sunday, table#timesheetTable td.sunday input { background-color: #e2e8f0 !important; background: #e2e8f0 !important; }
+            td.cell-selected, td.cell-fill-target { box-shadow: none !important; background-color: transparent !important; }
 
-            /* Triệt tiêu hiệu ứng đổ bóng 3D của cột Chức vụ ở bản web */
-            table#timesheetTable .col-role,
-            table#timesheetTable th.col-role,
-            table#timesheetTable td.col-role {
-                box-shadow: none !important; 
-                border-right: 1px solid #000 !important;
-            }
-
-            /* --- 2. LOẠI BỎ MÀU NỀN CỦA CÁC Ô THƯỜNG --- */
-            table#timesheetTable, 
-            table#timesheetTable .summary-col,
-            table#timesheetTable tr:nth-child(even) td,
-            table#timesheetTable tr:hover td {
-                background-color: transparent !important;
-                background: none !important;
-                color: #000 !important;
-            }
-
-            /* Triệt tiêu màu chữ do Javascript tự động gán */
-            table#timesheetTable input,
-            table#timesheetTable input.day-input,
-            td#stdTotalSum {
-                color: #000 !important;
-                background-color: transparent !important;
-                -webkit-text-fill-color: #000 !important;
-            }
-
-            /* --- 3. ĐỔ MÀU NỀN RIÊNG CHO CỘT CHỦ NHẬT KHI IN --- */
-            table#timesheetTable th.sunday, 
-            table#timesheetTable td.sunday,
-            table#timesheetTable td.sunday input {
-                background-color: #e2e8f0 !important; 
-                background: #e2e8f0 !important;
-            }
-
-            /* --- 4. CẤU HÌNH FONT CHỮ VÀ BỐ CỤC --- */
-            /* Ghi đè Font chữ, cỡ chữ tương tự như bản xlsx (khoảng 10pt) */
-            body, .header-info strong, 
-            table, th, td, table input, .print-footer, .sunday {
-                font-family: "Times New Roman", Times, serif !important;
-                font-size: 10pt !important;
-                color: #000 !important;
-            }
-
-            /* Sửa chữ bị khuất trong bảng */
-            input.day-input, .summary-col {
-                text-transform: uppercase;
-                font-family: "Times New Roman", Times, serif !important;
-                font-size: 8.5pt !important; 
-                letter-spacing: -0.5px !important; 
-                color: #000 !important;
-            }
-
-            /* Căn giữa tuyệt đối cho tiêu đề và chữ tháng... năm */
-            .title-section {
-                display: block !important;
-                text-align: center !important;
-                width: 100% !important;
-                margin-bottom: 15px !important;
-            }
-
-            /* Tiêu đề giống xlsx: Cỡ 14pt, In đậm, Màu đen */
-            .title-section h2 { 
-                display: block !important;
-                font-family: "Times New Roman", Times, serif !important;
-                font-size: 14pt !important; 
-                font-weight: bold !important;
-                color: #000 !important; 
-                margin: 0 0 5px 0 !important; 
-                text-align: center !important;
-            }
-            
-            /* Căn giữa tháng... năm */
-            .month-year-controls { 
-                display: block !important;
-                font-family: "Times New Roman", Times, serif !important;
-                font-weight: normal !important; 
-                font-style: italic !important; 
-                font-size: 10pt !important;
-                color: #000 !important; 
-                text-align: center !important;
-                width: 100% !important;
-            }
-            
-            .month-year-controls select, .month-year-controls input { 
-                display: inline-block !important; 
-                font-family: "Times New Roman", Times, serif !important;
-                border: none !important; 
-                background: transparent !important; 
-                appearance: none !important; 
-                -webkit-appearance: none !important; 
-                padding: 0 !important; 
-                margin: 0 !important;
-                font-size: 10pt !important;
-                font-weight: normal !important; 
-                font-style: italic !important; 
-                color: #000 !important; 
-                text-align: center !important;
-            }
-            
-            .month-year-controls select { width: 16px !important; }
-            .month-year-controls input { width: 32px !important; }
-            
-            /* Ẩn mũi tên tăng/giảm số trên bản in */
-            .month-year-controls input::-webkit-outer-spin-button,
-            .month-year-controls input::-webkit-inner-spin-button {
-                -webkit-appearance: none !important; margin: 0 !important;
-            }
-            
-            /* Reset container để hiển thị toàn bộ bảng */
+            body, .header-info strong, table, th, td, table input, .print-footer, .sunday { font-family: "Times New Roman", Times, serif !important; font-size: 10pt !important; color: #000 !important; }
+            input.day-input, .summary-col { text-transform: uppercase; font-family: "Times New Roman", Times, serif !important; font-size: 8.5pt !important; letter-spacing: -0.5px !important; color: #000 !important; }
+            .title-section { display: block !important; text-align: center !important; width: 100% !important; margin-bottom: 15px !important; }
+            .title-section h2 { display: block !important; font-family: "Times New Roman", Times, serif !important; font-size: 14pt !important; font-weight: bold !important; color: #000 !important; margin: 0 0 5px 0 !important; text-align: center !important; }
+            .month-year-controls { display: block !important; font-family: "Times New Roman", Times, serif !important; font-weight: normal !important; font-style: italic !important; font-size: 10pt !important; color: #000 !important; text-align: center !important; width: 100% !important; }
+            .month-year-controls select, .month-year-controls input { display: inline-block !important; font-family: "Times New Roman", Times, serif !important; border: none !important; background: transparent !important; appearance: none !important; -webkit-appearance: none !important; padding: 0 !important; margin: 0 !important; font-size: 10pt !important; font-weight: normal !important; font-style: italic !important; color: #000 !important; text-align: center !important; }
+            .month-year-controls select { width: 16px !important; } .month-year-controls input { width: 32px !important; }
+            .month-year-controls input::-webkit-outer-spin-button, .month-year-controls input::-webkit-inner-spin-button { -webkit-appearance: none !important; margin: 0 !important; }
             .table-container { max-height: none !important; overflow: visible !important; border: none !important; }
             table { min-width: 100% !important; width: 100% !important; border-collapse: collapse !important; }
             thead, tfoot, .col-tt, .col-name, .col-role, thead th.col-tt, thead th.col-name, thead th.col-role { position: static !important; }
 			tfoot { display: table-row-group !important; }
-            
-            /* Khung bảng - Dòng kẻ đen mảnh (0.5pt) */
-            th, td { 
-                border: 0.5pt solid #000 !important; 
-                height: 22px !important; 
-                padding: 0 !important; 
-            }
-
+            th, td { border: 0.5pt solid #000 !important; height: 22px !important; padding: 0 !important; }
             .col-role { border-right: 0.5pt solid #000 !important; }
-            
-            /* Reset cấu hình CHỈ CHO thẻ input TRONG BẢNG in */
-            table input { 
-                border: none !important; 
-                background: transparent !important; 
-                box-shadow: none !important; 
-                padding: 0 !important; 
-                margin: 0 !important;
-                width: 100% !important; /* Ép input trong bảng tràn full ngang */
-                box-sizing: border-box !important; 
-            }
-            
-            /* --- SỬA LỖI XUỐNG DÒNG "Khoa/Phòng" --- */
-            input.dept-input { 
-                border: none !important; 
-                background: transparent !important;
-                font-family: "Times New Roman", Times, serif !important;
-                font-size: 10pt !important; 
-                letter-spacing: normal !important;
-                width: 250px !important; /* Đặt lại width cố định, không để 100% */
-                padding: 0 !important;
-                margin-left: 5px !important;
-            }
-            
+            table input { border: none !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; box-sizing: border-box !important; }
+            input.dept-input { border: none !important; background: transparent !important; font-family: "Times New Roman", Times, serif !important; font-size: 10pt !important; letter-spacing: normal !important; width: 250px !important; padding: 0 !important; margin-left: 5px !important; }
             .col-name input, .col-role input { font-size: 10pt !important; letter-spacing: normal !important; }
         }
         
         .print-footer { display: none; }
 
         @media print {
-            .print-footer { 
-                display: block !important; 
-                margin-top: 15px; 
-                font-family: "Times New Roman", Times, serif; 
-                font-size: 10pt !important;
-                page-break-inside: avoid; 
-            }
+            .print-footer { display: block !important; margin-top: 15px; font-family: "Times New Roman", Times, serif; font-size: 10pt !important; page-break-inside: avoid; }
             .pf-body { display: flex; justify-content: space-between; align-items: flex-start; }
             .pf-legend-wrapper { width: 40%; }
             .pf-legend-grid { display: grid; grid-template-columns: auto auto; column-gap: 25px; row-gap: 5px; }
@@ -275,32 +158,12 @@
             .pf-sig-block { display: flex; flex-direction: column; align-items: center; }
             .pf-sig-block b { font-size: 10pt !important; }
         }
-		tbody tr:nth-child(even) td { 
-            background-color: #f8f9fa; 
-        }
-
-        tbody tr:hover td { 
-            background-color: #f1f8ff !important; 
-        }
-
-        .col-role { 
-            border-right: 1px solid var(--border-color) !important;
-            box-shadow: 3px 0 5px -2px rgba(0,0,0,0.1); 
-        }
-
-        .summary-col { 
-            background-color: #eef2f8 !important;
-        }
-
-        .saturday { 
-            background-color: #f1f3f4 !important; 
-        }
-
-        td input.day-input:focus {
-            background-color: #fff !important;
-            box-shadow: inset 0 0 0 2px var(--primary-color) !important;
-            border-radius: 2px;
-        }
+		tbody tr:nth-child(even) td { background-color: #f8f9fa; }
+        tbody tr:hover td { background-color: #f1f8ff !important; }
+        .col-role { border-right: 1px solid var(--border-color) !important; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.1); }
+        .summary-col { background-color: #eef2f8 !important; }
+        .saturday { background-color: #f1f3f4 !important; }
+        td input.day-input:focus { background-color: #fff !important; box-shadow: inset 0 0 0 2px var(--primary-color) !important; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -349,7 +212,7 @@
                     <div>Đi công tác : CT</div><div>Nghỉ dưỡng sức : DS</div>
                     <div>Nghỉ phép : P</div><div>Nghỉ ốm dài ngày : Ôdn</div>
                     <div>Nghỉ lễ, tết : L</div><div>Nghỉ không lương : K</div>
-                    <div>Nghỉ nửa ngày KL : 1/2K</div><div></div>
+                    <div>Nghỉ nửa ngày KL : 1/2K</div><div>Chủ nhật : CN</div>
                 </div>
             </div>
             <div class="pf-signatures">
@@ -374,7 +237,7 @@
             <div style="padding: 10px; display: inline-block; line-height: 1.8;">
                 <b>Ký hiệu chấm công:</b><br>
                 Làm cả ngày: <b>X</b> &nbsp;|&nbsp; Nửa ngày: <b>X/2</b> &nbsp;|&nbsp; Đi công tác: <b style="color: #1e8e3e;">CT</b> &nbsp;|&nbsp; Nghỉ không lương: <b style="color: #d93025;">K</b> &nbsp;|&nbsp; Nghỉ nửa ngày không lương: <b style="color: #d93025;">1/2K</b><br> 
-                Nghỉ phép: <b style="color: #f29900;">P</b> &nbsp;|&nbsp; Nghỉ lễ, tết: <b style="color: #f29900;">L</b><br>
+                Nghỉ phép: <b style="color: #f29900;">P</b> &nbsp;|&nbsp; Nghỉ lễ, tết: <b style="color: #f29900;">L</b> &nbsp;|&nbsp; Chủ nhật: <b style="color: #1967d2;">CN</b><br>
                 Ốm, đau: <b style="color: #9c27b0;">Ô</b> &nbsp;|&nbsp; Thai sản: <b style="color: #9c27b0;">TS</b> &nbsp;|&nbsp; Nghỉ dưỡng sức sau sinh: <b style="color: #9c27b0;">DS</b> &nbsp;|&nbsp; Nghỉ ốm dài ngày: <b style="color: #9c27b0;">Ôdn</b>
             </div>
         </div>
@@ -405,7 +268,7 @@
     
     let staffData = [];
     let saveTimeout = null;
-    const validStdCodes = ['X', 'X/2', 'CT', 'P', 'L', 'Ô', 'TS', 'K', '1/2K', 'DS', 'ÔDN'];
+    const validStdCodes = ['X', 'X/2', 'CT', 'P', 'L', 'Ô', 'TS', 'K', '1/2K', 'DS', 'ÔDN', 'CN'];
 
     const monthSelect = document.getElementById('monthSelect');
     const yearSelect = document.getElementById('yearSelect');
@@ -417,6 +280,8 @@
     const iconSync = `<svg class="icon-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f29900" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>`;
     const iconCloudCheck = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e8e3e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><polyline points="9 15 12 18 17 12"></polyline></svg>`;
     const iconError = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d93025" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+    window.currentDaysInMonth = 31; 
 
     const now = new Date();
     for (let i = 1; i <= 12; i++) {
@@ -443,60 +308,247 @@
             }
         }
     });
+
 	tbody.addEventListener('keydown', (e) => {
 		const input = e.target;
 		if (!input.classList.contains('day-input')) return;
 
 		const td = input.closest('td');
 		const tr = td.closest('tr');
-		
-		// Lấy vị trí cột và dòng hiện tại
 		const colIndex = Array.from(tr.children).indexOf(td);
 		const rows = Array.from(tbody.querySelectorAll('tr'));
 		const rowIndex = rows.indexOf(tr);
-
 		let nextInput = null;
 
 		switch (e.key) {
-			case 'ArrowRight':
-				// Sang phải
-				nextInput = tr.children[colIndex + 1]?.querySelector('input');
-				break;
-			case 'ArrowLeft':
-				// Sang trái
-				nextInput = tr.children[colIndex - 1]?.querySelector('input');
-				break;
-			case 'ArrowDown':
-				// Xuống dưới
-				if (rows[rowIndex + 1]) {
-					nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input');
-				}
-				break;
-			case 'ArrowUp':
-				// Lên trên
-				if (rows[rowIndex - 1]) {
-					nextInput = rows[rowIndex - 1].children[colIndex]?.querySelector('input');
-				}
-				break;
-			case 'Enter':
-				// Bấm Enter cũng sẽ tự nhảy xuống dòng dưới
-				if (rows[rowIndex + 1]) {
-					nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input');
-				}
-				break;
+			case 'ArrowRight': nextInput = tr.children[colIndex + 1]?.querySelector('input'); break;
+			case 'ArrowLeft': nextInput = tr.children[colIndex - 1]?.querySelector('input'); break;
+			case 'ArrowDown': if (rows[rowIndex + 1]) nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input'); break;
+			case 'ArrowUp': if (rows[rowIndex - 1]) nextInput = rows[rowIndex - 1].children[colIndex]?.querySelector('input'); break;
+			case 'Enter': if (rows[rowIndex + 1]) nextInput = rows[rowIndex + 1].children[colIndex]?.querySelector('input'); break;
 		}
 
 		if (nextInput) {
-			e.preventDefault(); // Ngăn chặn hành vi cuộn trang mặc định
+			e.preventDefault();
 			nextInput.focus();
-			nextInput.select(); // Bôi đen sẵn chữ bên trong để gõ đè luôn
+			nextInput.select();
 		}
 	});
+
     tbody.addEventListener('mouseout', (e) => {
         if (e.target.classList.contains('day-input')) {
             document.querySelectorAll('.highlight-header').forEach(el => el.classList.remove('highlight-header'));
         }
     });
+
+    // --- TÍNH NĂNG CHỌN VÙNG VÀ KÉO THẢ NHƯ EXCEL ---
+    let selStart = { r: -1, c: -1 };
+    let selEnd = { r: -1, c: -1 };
+    let isSelecting = false;
+    let isDraggingFill = false;
+    let fillTargetEnd = { r: -1, c: -1 };
+    let hasDragged = false; 
+
+    window.selectRow = function(r) {
+        selStart = { r, c: 1 };
+        selEnd = { r, c: window.currentDaysInMonth };
+        hasDragged = false;
+        updateSelectionUI();
+    }
+
+    tbody.addEventListener('mousedown', (e) => {
+        if (e.target.id === 'fill-handle') {
+            isDraggingFill = true;
+            document.body.classList.add('is-dragging'); // Chống bôi đen text trình duyệt
+            fillTargetEnd = { ...selEnd };
+            e.preventDefault();
+            return;
+        }
+        if (e.target.classList.contains('day-input') && e.button === 0) {
+            isSelecting = true;
+            hasDragged = false;
+            document.body.classList.add('is-dragging'); 
+            const r = parseInt(e.target.dataset.row);
+            const c = parseInt(e.target.dataset.col);
+            selStart = { r, c };
+            selEnd = { r, c };
+            updateSelectionUI();
+        }
+    });
+
+    tbody.addEventListener('mouseover', (e) => {
+        if (isSelecting && e.target.classList.contains('day-input')) {
+            const r = parseInt(e.target.dataset.row);
+            const c = parseInt(e.target.dataset.col);
+            if (selEnd.r !== r || selEnd.c !== c) {
+                selEnd = { r, c };
+                hasDragged = true; 
+                updateSelectionUI();
+            }
+        }
+        if (isDraggingFill && e.target.classList.contains('day-input')) {
+            const r = parseInt(e.target.dataset.row);
+            const c = parseInt(e.target.dataset.col);
+            if (fillTargetEnd.r !== r || fillTargetEnd.c !== c) {
+                fillTargetEnd = { r, c };
+                updateFillUI();
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        document.body.classList.remove('is-dragging');
+        if (isSelecting) isSelecting = false;
+        if (isDraggingFill) {
+            isDraggingFill = false;
+            executeFill(false);
+        }
+    });
+
+    function updateSelectionUI() {
+        document.querySelectorAll('td.cell-selected').forEach(el => el.classList.remove('cell-selected'));
+        const handle = document.getElementById('fill-handle');
+        if (handle) handle.remove();
+
+        if (selStart.r === -1) return;
+
+        const rMin = Math.min(selStart.r, selEnd.r);
+        const rMax = Math.max(selStart.r, selEnd.r);
+        const cMin = Math.min(selStart.c, selEnd.c);
+        const cMax = Math.max(selStart.c, selEnd.c);
+
+        let bottomRightInput = null;
+
+        document.querySelectorAll('.day-input').forEach(input => {
+            const r = parseInt(input.dataset.row);
+            const c = parseInt(input.dataset.col);
+            if (r >= rMin && r <= rMax && c >= cMin && c <= cMax) {
+                input.parentElement.classList.add('cell-selected');
+                if (r === rMax && c === cMax) bottomRightInput = input;
+            }
+        });
+
+        // Tạo nút kéo & Tính năng Nháy Đúp (Double Click)
+        if (bottomRightInput) {
+            const handleDiv = document.createElement('div');
+            handleDiv.id = 'fill-handle';
+            handleDiv.title = "Kéo để copy vùng này.\nNháy đúp để Copy xuống dòng cuối cùng.";
+            
+            // Xử lý Double Click
+            handleDiv.addEventListener('dblclick', function(e) {
+                e.stopPropagation();
+                fillTargetEnd.r = staffData.length - 1; // Chọn dòng cuối cùng
+                fillTargetEnd.c = selEnd.c; // Giữ nguyên cột
+                executeFill(true); // Tham số true ép chạy copy xuống dưới
+            });
+            
+            bottomRightInput.parentElement.appendChild(handleDiv);
+        }
+    }
+
+    function updateFillUI() {
+        document.querySelectorAll('td.cell-fill-target').forEach(el => el.classList.remove('cell-fill-target'));
+        const rMin = Math.min(selStart.r, selEnd.r);
+        const rMax = Math.max(selStart.r, selEnd.r);
+        const cMin = Math.min(selStart.c, selEnd.c);
+        const cMax = Math.max(selStart.c, selEnd.c);
+
+        let fillRMin = rMin, fillRMax = rMax, fillCMin = cMin, fillCMax = cMax;
+
+        // Tính hướng kéo xa nhất để quyết định Copy Ngang hay Copy Dọc
+        if (Math.abs(fillTargetEnd.r - rMax) > Math.abs(fillTargetEnd.c - cMax) || Math.abs(fillTargetEnd.r - rMin) > Math.abs(fillTargetEnd.c - cMin)) {
+            // Kéo Dọc
+            if (fillTargetEnd.r > rMax) fillRMax = fillTargetEnd.r;
+            else if (fillTargetEnd.r < rMin) fillRMin = fillTargetEnd.r;
+        } else {
+            // Kéo Ngang
+            if (fillTargetEnd.c > cMax) fillCMax = fillTargetEnd.c;
+            else if (fillTargetEnd.c < cMin) fillCMin = fillTargetEnd.c;
+        }
+
+        document.querySelectorAll('.day-input').forEach(input => {
+            const r = parseInt(input.dataset.row);
+            const c = parseInt(input.dataset.col);
+            const inOriginal = (r >= rMin && r <= rMax && c >= cMin && c <= cMax);
+            const inTarget = (r >= fillRMin && r <= fillRMax && c >= fillCMin && c <= fillCMax);
+            if (inTarget && !inOriginal) {
+                input.parentElement.classList.add('cell-fill-target');
+            }
+        });
+    }
+
+    function executeFill(forceDown) {
+        const rMin = Math.min(selStart.r, selEnd.r);
+        const rMax = Math.max(selStart.r, selEnd.r);
+        const cMin = Math.min(selStart.c, selEnd.c);
+        const cMax = Math.max(selStart.c, selEnd.c);
+
+        let fillRMin = rMin, fillRMax = rMax, fillCMin = cMin, fillCMax = cMax;
+
+        if (forceDown) {
+            fillRMax = fillTargetEnd.r;
+        } else {
+            if (Math.abs(fillTargetEnd.r - rMax) > Math.abs(fillTargetEnd.c - cMax) || Math.abs(fillTargetEnd.r - rMin) > Math.abs(fillTargetEnd.c - cMin)) {
+                if (fillTargetEnd.r > rMax) fillRMax = fillTargetEnd.r;
+                else if (fillTargetEnd.r < rMin) fillRMin = fillTargetEnd.r;
+            } else {
+                if (fillTargetEnd.c > cMax) fillCMax = fillTargetEnd.c;
+                else if (fillTargetEnd.c < cMin) fillCMin = fillTargetEnd.c;
+            }
+        }
+
+        // Không làm gì nếu không có vùng mục tiêu
+        if (fillRMin === rMin && fillRMax === rMax && fillCMin === cMin && fillCMax === cMax) return;
+
+        // Lưu lại ma trận dữ liệu gốc
+        const srcData = [];
+        for (let r = rMin; r <= rMax; r++) {
+            let rowData = [];
+            for (let c = cMin; c <= cMax; c++) {
+                const input = document.querySelector(`.day-input[data-row="${r}"][data-col="${c}"]`);
+                rowData.push(input ? input.value : '');
+            }
+            srcData.push(rowData);
+        }
+
+        let changed = false;
+        const rowCount = rMax - rMin + 1;
+        const colCount = cMax - cMin + 1;
+
+        // Áp dụng dữ liệu vào vùng target
+        document.querySelectorAll('.day-input').forEach(input => {
+            const r = parseInt(input.dataset.row);
+            const c = parseInt(input.dataset.col);
+            const inOriginal = (r >= rMin && r <= rMax && c >= cMin && c <= cMax);
+            const inTarget = (r >= fillRMin && r <= fillRMax && c >= fillCMin && c <= fillCMax);
+
+            if (inTarget && !inOriginal) {
+                // Tính toán vị trí tương ứng trong ma trận gốc (hỗ trợ copy lặp lại nhiều lần)
+                let srcR = (r - fillRMin) % rowCount;
+                if(fillRMin < rMin) srcR = ((r - rMin) % rowCount + rowCount) % rowCount;
+                else srcR = (r - rMin) % rowCount;
+
+                let srcC = (c - cMin) % colCount;
+                if(fillCMin < cMin) srcC = ((c - cMin) % colCount + colCount) % colCount;
+
+                const val = srcData[srcR][srcC];
+                if (input.value !== val) {
+                    input.value = val;
+                    applyColor(input);
+                    changed = true;
+                }
+            }
+        });
+
+        if (changed) triggerAutoSave();
+
+        // Cập nhật lại vùng bôi đen bao trùm cả khu vực vừa copy
+        selStart = { r: fillRMin, c: fillCMin };
+        selEnd = { r: fillRMax, c: fillCMax };
+        updateSelectionUI();
+        document.querySelectorAll('td.cell-fill-target').forEach(el => el.classList.remove('cell-fill-target'));
+    }
+    // --- KẾT THÚC DRAG TO FILL ---
 
     function getDayOfWeekStr(day, month, year) {
         const date = new Date(year, month - 1, day);
@@ -516,7 +568,6 @@
                 const data = snapshot.val();
                 departmentInput.value = data.departmentName || "";
                 
-                // [SỬA LỖI 1]: Lọc bỏ an toàn các phần tử null do Firebase tự sinh ra khi xóa dòng
                 let rawData = data.staffData || [];
                 let parsedData = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 staffData = parsedData.filter(staff => staff != null);
@@ -525,17 +576,17 @@
                 statusEl.innerHTML = iconCloudCheck;
                 statusEl.title = "Dữ liệu đã đồng bộ";
             } else {
-                // [SỬA LỖI 2]: Quét lùi tìm tháng gần nhất có dữ liệu thay vì chỉ lùi đúng 1 tháng
                 findLatestAvailableData(currentMonth, currentYear);
             }
         }).catch((error) => {
             console.error("Lỗi khi tải dữ liệu từ Firebase:", error);
             statusEl.innerHTML = iconError;
             statusEl.title = "Lỗi tải dữ liệu!";
-            staffData = [{ name: '', role: 'Hành chính', days: {} }];
+            staffData = [{ name: '', role: 'Điều dưỡng', days: {} }];
             renderTable();
         });
     }
+
 	function findLatestAvailableData(startMonth, startYear) {
         let m = startMonth - 1;
         let y = startYear;
@@ -546,8 +597,7 @@
 
         function searchNext() {
             if (attempts >= maxAttempts) {
-                // Đã lùi 12 tháng nhưng vẫn không có dữ liệu nào -> Khởi tạo bảng trắng
-                staffData = [{ name: '', role: 'Hành chính', days: {} }];
+                staffData = [{ name: '', role: 'Điều dưỡng', days: {} }];
                 renderTable();
                 triggerAutoSave();
                 statusEl.innerText = "Tạo mới dữ liệu tháng ✓";
@@ -563,10 +613,8 @@
                     let rawPrevStaff = prevData.staffData || [];
                     let prevStaffList = Array.isArray(rawPrevStaff) ? rawPrevStaff : Object.values(rawPrevStaff);
                     
-                    // Lọc bỏ phần tử null để tránh lỗi crash Javascript
                     prevStaffList = prevStaffList.filter(staff => staff != null);
 
-                    // Chỉ chép Họ tên và Chức vụ, bỏ lại dữ liệu ngày chấm công cũ
                     staffData = prevStaffList.map(staff => ({
                         name: staff.name || '',
                         role: staff.role || '',
@@ -579,7 +627,6 @@
                     statusEl.innerText = `Đã chép từ T${m}/${y} ✓`;
                     statusEl.style.color = "#1a73e8";
                 } else {
-                    // Nếu tháng này vẫn trống, tự động lùi thêm 1 tháng nữa để tìm kiếm
                     m--;
                     if (m === 0) { m = 12; y--; }
                     attempts++;
@@ -587,9 +634,9 @@
                 }
             });
         }
-
         searchNext();
     }
+
     function triggerAutoSave() {
         const rows = tbody.querySelectorAll('tr');
         staffData = Array.from(rows).map(row => {
@@ -613,7 +660,6 @@
             staffData: staffData,
             updatedAt: firebase.database.ServerValue.TIMESTAMP
         };
-        
         saveToFirebase(payload);
     }
 
@@ -643,6 +689,7 @@
         const month = parseInt(monthSelect.value);
         const year = parseInt(yearSelect.value);
         const daysInMonth = new Date(year, month, 0).getDate();
+        window.currentDaysInMonth = daysInMonth; 
         
         const printDateEl = document.getElementById('printDate');
         if(printDateEl) {
@@ -667,7 +714,6 @@
         let dowRow = document.getElementById('dowRow');
         for (let d = 1; d <= daysInMonth; d++) {
             let dowStr = getDayOfWeekStr(d, month, year);
-            /* Đã thêm class đánh dấu sunday cho ô số ngày */
             daysRow.innerHTML += `<th class="${dowStr==='CN'?'sunday':''}" style="width:24px">${d}</th>`;
             dowRow.innerHTML += `<th class="${dowStr==='CN'?'sunday':''}" style="font-size:10.5px">${dowStr}</th>`;
         }
@@ -694,25 +740,26 @@
 
     function renderBody(daysInMonth, month, year) {
         tbody.innerHTML = '';
-        if(!staffData || staffData.length === 0) staffData = [{name: '', role: 'Hành chính', days: {}}];
+        if(!staffData || staffData.length === 0) staffData = [{name: '', role: 'Điều dưỡng', days: {}}];
         
         staffData.forEach((staff, idx) => {
             const tr = document.createElement('tr');
+            tr.dataset.row = idx;
             let daysHtml = '';
             for(let d=1; d<=daysInMonth; d++) {
                 let isSun = getDayOfWeekStr(d, month, year) === 'CN';
-                let val = (staff.days && staff.days[d]) ? staff.days[d] : '';
+                let val = (staff.days && typeof staff.days[d] !== 'undefined') ? staff.days[d] : (isSun ? 'CN' : '');
                 let displayVal = val === '1/2K' ? '1/2K' : val;
                 
                 daysHtml += `<td class="${isSun?'sunday':''}">
-                                <input type="text" class="day-input" data-day="${d}" value="${displayVal}" 
+                                <input type="text" class="day-input" data-row="${idx}" data-col="${d}" data-day="${d}" value="${displayVal}" 
                                 onfocus="this.dataset.justFocused='true'" onclick="handleInputClick(this)"
                                 oncontextmenu="clearInput(event, this)" oninput="validateInput(this)" onblur="formatInput(this)">
                              </td>`;
             }
 
             tr.innerHTML = `
-                <td class="col-tt">${idx+1}</td>
+                <td class="col-tt" onclick="selectRow(${idx})" title="Bấm vào để chọn/copy cả hàng này">${idx+1}</td>
                 <td class="col-name"><input type="text" value="${staff.name || ''}" oninput="formatTitleCaseRT(this)" onchange="triggerAutoSave()"></td>
                 <td class="col-role"><input type="text" value="${staff.role || ''}" oninput="formatSentenceCaseRT(this)" onchange="triggerAutoSave()"></td>
                 ${daysHtml}
@@ -728,16 +775,23 @@
     }
 
     function handleInputClick(input) {
+        if (hasDragged) { hasDragged = false; return; } 
         if (input.dataset.justFocused === 'true') { 
             input.dataset.justFocused = 'false'; input.select(); return; 
         }
-        const cycle = ['', 'X', 'X/2', 'P', 'L', 'CT', 'Ô', 'TS', 'DS', 'ÔDN', 'K', '1/2K'];
+        const cycle = ['', 'X', 'X/2', 'P', 'L', 'CT', 'Ô', 'TS', 'DS', 'ÔDN', 'K', '1/2K', 'CN'];
         let idx = cycle.indexOf(input.value.toUpperCase());
         if(idx === -1) idx = 0;
         let nextVal = cycle[(idx + 1) % cycle.length];
         if (nextVal === '1/2K') input.value = '1/2K';
 		else input.value = nextVal;
+        
         applyColor(input); triggerAutoSave(); input.select();
+        
+        // Reset vùng chọn sau khi click để hiện nút kéo
+        selStart = { r: parseInt(input.dataset.row), c: parseInt(input.dataset.col) };
+        selEnd = { ...selStart };
+        updateSelectionUI();
     }
 
     function clearInput(event, input) { event.preventDefault(); input.value = ''; applyColor(input); triggerAutoSave(); }
@@ -748,18 +802,18 @@
         else if (['Ô', 'TS', 'DS', 'ÔDN'].includes(val)) input.style.color = '#9c27b0'; 
         else if (val === 'CT') input.style.color = '#1e8e3e'; 
         else if (['K', '1/2K'].includes(val)) input.style.color = '#d93025'; 
+        else if (val === 'CN') input.style.color = '#1967d2'; 
         else input.style.color = 'var(--text-main)'; 
     }
 
     function validateInput(input) { 
-		input.value = input.value.toUpperCase(); // Ép in hoa ngay lập tức khi gõ
+		input.value = input.value.toUpperCase(); 
 		applyColor(input); 
 	}
 
     function formatInput(input) {
 		let val = input.value.toUpperCase();
 		if (!validStdCodes.includes(val) && val !== '') input.value = '';
-		// Đã gỡ bỏ dòng: else if (val === 'ÔDN') input.value = 'Ôdn';
 		else if (val === '1/2K') input.value = '1/2K'; 
 		
 		input.dataset.justFocused = 'false'; 
@@ -792,12 +846,11 @@
         document.getElementById('stdPSum').innerText = sP || '';
         document.getElementById('stdBHXHSum').innerText = sBHXH || '';
     }
-	// Hàm viết hoa chữ cái đầu của MỖI TỪ (Dành cho Tên và Khoa/Phòng)
+
     function formatTitleCaseRT(input) {
-        let start = input.selectionStart; // Ghi nhớ vị trí con trỏ chuột
+        let start = input.selectionStart; 
         let val = input.value;
         
-        // Tách từ theo khoảng trắng để không làm mất dấu cách người dùng đang gõ
         let words = val.split(' ');
         let newVal = words.map(w => {
             if (w.length === 0) return w;
@@ -806,11 +859,10 @@
 
         if (val !== newVal) {
             input.value = newVal;
-            input.setSelectionRange(start, start); // Đưa con trỏ về đúng vị trí cũ, chống nhảy chữ
+            input.setSelectionRange(start, start); 
         }
     }
 
-    // Hàm viết hoa chữ cái đầu câu (Real-time khi đang gõ)
     function formatSentenceCaseRT(input) {
         let start = input.selectionStart;
         let val = input.value;
@@ -819,11 +871,11 @@
             let newVal = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
             if (val !== newVal) {
                 input.value = newVal;
-                input.setSelectionRange(start, start); // Giữ nguyên vị trí con trỏ
+                input.setSelectionRange(start, start); 
             }
         }
     }
-    window.addRow = function() { staffData.push({name:'', role:'Hành chính', days:{}}); renderTable(); triggerAutoSave(); }
+    window.addRow = function() { staffData.push({name:'', role:'Điều dưỡng', days:{}}); renderTable(); triggerAutoSave(); }
     window.deleteRow = function(idx) { if(confirm("Xóa nhân sự?")) { staffData.splice(idx,1); renderTable(); triggerAutoSave(); } }
 
     window.exportToExcel = async function() {
@@ -893,13 +945,14 @@
             sheet.getCell(currentRow, 1).value = index + 1; sheet.getCell(currentRow, 2).value = staff.name; sheet.getCell(currentRow, 3).value = staff.role;
             let tTime=0, tCT=0, tP=0, tBHXH=0; 
             for(let d=1; d<=daysInMonth; d++) {
-                let val = (staff.days && staff.days[d]) ? staff.days[d] : '';
+                let isSun = getDayOfWeekStr(d, month, year) === 'CN';
+                let val = (staff.days && typeof staff.days[d] !== 'undefined') ? staff.days[d] : (isSun ? 'CN' : '');
                 let displayVal = val === 'ÔDN' ? 'Ôdn' : (val === '1/2K' ? '1/2K' : val);
                 sheet.getCell(currentRow, 3+d).value = displayVal;
                 if(val==='X') tTime += 1; else if(val==='X/2') tTime += 0.5;
                 else if(val==='P' || val==='L') tP += 1; else if(val==='CT') tCT += 1;
                 else if(['Ô', 'TS', 'DS', 'ÔDN'].includes(val)) tBHXH += 1;
-                if (getDayOfWeekStr(d, month, year) === 'CN') sheet.getCell(currentRow, 3+d).fill = sundayFill;
+                if (isSun) sheet.getCell(currentRow, 3+d).fill = sundayFill;
             }
             let tTotal = tTime + tCT + tP;
             sheet.getCell(currentRow, 4+daysInMonth).value = tTotal || ''; sheet.getCell(currentRow, 5+daysInMonth).value = tCT || '';
@@ -957,7 +1010,7 @@
             ["Đi công tác : CT", "Nghỉ dưỡng sức : DS"],
             ["Nghỉ phép : P", "Nghỉ ốm dài ngày : Ôdn"],
             ["Nghỉ lễ, tết : L", "Nghỉ không lương : K"],
-            ["Nghỉ nửa ngày KL : 1/2K", ""]
+            ["Nghỉ nửa ngày KL : 1/2K", "Chủ nhật : CN"]
         ];
 
         for (let i = 0; i < legendData.length; i++) {
