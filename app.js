@@ -3,25 +3,85 @@ const LS_BASE = 'bangcong_v30';
 const LS_OLD = 'bangcong_v29';
 const WD = ['CN','T2','T3','T4','T5','T6','T7'];
 
-const RATES = { TH:170000, TCN:220000, HNT:300000, HNN:330000, YBT:180000, YBN:200000 };
+const RATES = { T:170000, C:220000, TrL:290000, HNT:300000, HNN:330000, YBT:180000, YBN:200000 };
 
-// ✅ NEW: Tên mục mặc định dùng chung cho khởi tạo & reset
 const DEFAULT_SYS_NAMES = {
   base: 'Lương cơ bản', cash: 'Tiền mặt', allowance: 'Trợ cấp', raise: 'Lương tăng',
   bhxh: 'BHXH', bhyt: 'BHYT', bhtn: 'BHTN', quy: 'Quỹ khoa / Hội ĐD', cd: 'Công đoàn', qdd: 'Quỹ Điều dưỡng'
 };
 
-const MAIN_VALUE = { 'x':1, 'x/2':0.5, 'CT':1, 'CT/2':0.5, 'L':0, 'P':0, 'O':0 };
+const ACCENT_PRESETS = [
+  { id: 'blue',    name: 'Xanh dương', color: '#2563eb' },
+  { id: 'sky',     name: 'Da trời',    color: '#0ea5e9' },
+  { id: 'cyan',    name: 'Xanh lơ',    color: '#0891b2' },
+  { id: 'teal',    name: 'Xanh ngọc',  color: '#0d9488' },
+  { id: 'emerald', name: 'Ngọc lục',   color: '#059669' },
+  { id: 'green',   name: 'Xanh lá',    color: '#16a34a' },
+  { id: 'forest',  name: 'Xanh rừng',  color: '#166534' },
+  { id: 'lime',    name: 'Chanh',      color: '#65a30d' },
+  { id: 'yellow',  name: 'Vàng tươi',  color: '#ca8a04' },
+  { id: 'amber',   name: 'Vàng cam',   color: '#d97706' },
+  { id: 'orange',  name: 'Cam',        color: '#ea580c' },
+  { id: 'peach',   name: 'Cam đào',    color: '#f97316' },
+  { id: 'rose',    name: 'Hồng đào',   color: '#e11d48' },
+  { id: 'red',     name: 'Đỏ',         color: '#dc2626' },
+  { id: 'crimson', name: 'Đỏ thẫm',    color: '#b91c1c' },
+  { id: 'pink',    name: 'Hồng',       color: '#db2777' },
+  { id: 'fuchsia', name: 'Hồng tím',   color: '#c026d3' },
+  { id: 'purple',  name: 'Tím',        color: '#7c3aed' },
+  { id: 'violet',  name: 'Violet',     color: '#8b5cf6' },
+  { id: 'indigo',  name: 'Chàm',       color: '#4f46e5' },
+  { id: 'navy',    name: 'Navy',       color: '#1e40af' },
+  { id: 'slate',   name: 'Xám xanh',   color: '#475569' },
+  { id: 'gray',    name: 'Xám',        color: '#52525b' },
+  { id: 'brown',   name: 'Nâu',        color: '#78350f' },
+];
+
+/* ===== NGÀY LỄ VIỆT NAM (Dương + Âm lịch) ===== */
+const VN_HOLIDAYS = (() => {
+  const map = {};
+  // Dương lịch — áp dụng cho 2023..2035
+  const solar = [
+    ['01-01', 'Tết Dương lịch'],
+    ['04-30', 'Ngày Giải phóng miền Nam'],
+    ['05-01', 'Quốc tế Lao động'],
+    ['09-02', 'Quốc khánh'],
+    ['09-03', 'Nghỉ Quốc khánh'],
+  ];
+  for (let y = 2023; y <= 2035; y++) {
+    solar.forEach(([md, name]) => { map[`${y}-${md}`] = name; });
+  }
+  // Âm lịch — Tết Nguyên Đán (30 Tết → mùng 5) và Giỗ Tổ Hùng Vương (10/3 âm)
+  const lunar = {
+    2024: [['02-09','30 Tết'],['02-10','Mùng 1 Tết'],['02-11','Mùng 2 Tết'],['02-12','Mùng 3 Tết'],['02-13','Mùng 4 Tết'],['02-14','Mùng 5 Tết'],['04-18','Giỗ Tổ Hùng Vương']],
+    2025: [['01-28','30 Tết'],['01-29','Mùng 1 Tết'],['01-30','Mùng 2 Tết'],['01-31','Mùng 3 Tết'],['02-01','Mùng 4 Tết'],['02-02','Mùng 5 Tết'],['04-07','Giỗ Tổ Hùng Vương']],
+    2026: [['02-16','30 Tết'],['02-17','Mùng 1 Tết'],['02-18','Mùng 2 Tết'],['02-19','Mùng 3 Tết'],['02-20','Mùng 4 Tết'],['02-21','Mùng 5 Tết'],['04-26','Giỗ Tổ Hùng Vương']],
+    2027: [['02-05','30 Tết'],['02-06','Mùng 1 Tết'],['02-07','Mùng 2 Tết'],['02-08','Mùng 3 Tết'],['02-09','Mùng 4 Tết'],['02-10','Mùng 5 Tết'],['04-16','Giỗ Tổ Hùng Vương']],
+    2028: [['01-25','30 Tết'],['01-26','Mùng 1 Tết'],['01-27','Mùng 2 Tết'],['01-28','Mùng 3 Tết'],['01-29','Mùng 4 Tết'],['01-30','Mùng 5 Tết'],['04-04','Giỗ Tổ Hùng Vương']],
+    2029: [['02-12','30 Tết'],['02-13','Mùng 1 Tết'],['02-14','Mùng 2 Tết'],['02-15','Mùng 3 Tết'],['02-16','Mùng 4 Tết'],['02-17','Mùng 5 Tết'],['04-24','Giỗ Tổ Hùng Vương']],
+    2030: [['02-02','30 Tết'],['02-03','Mùng 1 Tết'],['02-04','Mùng 2 Tết'],['02-05','Mùng 3 Tết'],['02-06','Mùng 4 Tết'],['02-07','Mùng 5 Tết'],['04-13','Giỗ Tổ Hùng Vương']],
+  };
+  Object.keys(lunar).forEach(y => {
+    lunar[y].forEach(([md, name]) => { map[`${y}-${md}`] = name; });
+  });
+  return map;
+})();
+const isHoliday = (k) => !!VN_HOLIDAYS[k];
+const getHolidayName = (k) => VN_HOLIDAYS[k] || '';
+
+const MAIN_VALUE = { 'x':1, 'x/2':0.5, 'CT':1, 'CT/2':0.5, 'L':0, 'L0':0, 'P':0, 'O':0 };
 const INFO = {
   'x':    { code:'x',    label:'Đi làm',         sub:'1 công' },
   'x/2':  { code:'x/2',  label:'Nửa ngày',       sub:'0,5 công' },
   'CT':   { code:'CT',   label:'Công tác',       sub:'1 công' },
   'CT/2': { code:'CT/2', label:'CT nửa ngày',    sub:'0,5 công' },
   'L':    { code:'L',    label:'Nghỉ lễ',        sub:'có lương' },
+  'L0':   { code:'L0',   label:'Nghỉ lễ',        sub:'không lương' },
   'P':    { code:'P',    label:'Nghỉ phép',      sub:'—' },
   'O':    { code:'O',    label:'Không phép',     sub:'không lương' },
-  'TH':   { code:'TH',   label:'Trực thường',    sub:'170.000 đ' },
-  'TCN':  { code:'TCN',  label:'Trực CN',        sub:'220.000 đ' },
+  'T':    { code:'T',    label:'Trực thường',    sub:'170.000 đ' },
+  'C':    { code:'C',    label:'Trực CN',        sub:'220.000 đ' },
+  'TrL':  { code:'TrL',  label:'Trực Lễ',        sub:'290.000 đ' },
   'HNT':  { code:'HNT',  label:'Hà Nội · giờ',   sub:'300.000 đ' },
   'HNN':  { code:'HNN',  label:'Hà Nội · ngoài', sub:'330.000 đ' },
   'YBT':  { code:'YBT',  label:'Yên Bái · giờ',  sub:'180.000 đ' },
@@ -47,7 +107,6 @@ const state = {
   raiseMax: 480000, raiseStandard: 24, countLeave: false,
   ded: { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 },
   customIncome: [], customDeductions: [], days: {},
-  // ✅ FIX: dùng hằng số mặc định
   sysNames: { ...DEFAULT_SYS_NAMES }
 };
 
@@ -78,6 +137,18 @@ function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'
 function getInitial(name, email) { let n = (name || '').trim(); if (n) { const parts = n.split(/\s+/); return parts[parts.length - 1].charAt(0).toUpperCase(); } return (email || '?').trim().charAt(0).toUpperCase() || '?'; }
 function avatarColor(str) { if (!str) return '#2563eb'; let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); const colors = ['#2563eb','#7c3aed','#db2777','#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#0f766e']; return colors[Math.abs(hash) % colors.length]; }
 
+// ✅ Migration: TH → T, TCN → C
+function migrateDayCodes(days) {
+  if (!days || typeof days !== 'object') return days;
+  Object.keys(days).forEach(k => {
+    const d = days[k];
+    if (!d) return;
+    if (d.truc === 'TH') d.truc = 'T';
+    if (d.truc === 'TCN') d.truc = 'C';
+  });
+  return days;
+}
+
 function resetState() {
   const t = new Date();
   state.month = t.getMonth()+1; state.year = t.getFullYear();
@@ -88,7 +159,6 @@ function resetState() {
   state.ded = { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 };
   state.customIncome = []; state.customDeductions = []; state.days = {};
   currentProfile = { displayName: '', photoURL: '' };
-  // ✅ FIX: dùng hằng số mặc định
   state.sysNames = { ...DEFAULT_SYS_NAMES };
 }
 
@@ -102,8 +172,10 @@ function calcAutoStandard(y, m) {
   return Math.round(cnt * 10) / 10;
 }
 
-/* ===== THEME ===== */
+/* ===== THEME & ACCENT ===== */
 let currentTheme = localStorage.getItem('theme') || 'light';
+let currentAccent = localStorage.getItem('accent') || 'blue';
+
 const svgSun = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
 const svgMoon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 
@@ -114,8 +186,26 @@ function applyTheme(theme) {
   const themeIcon = $('#themeIcon'), text = $('#themeText');
   if (theme === 'dark') { if (themeIcon) themeIcon.innerHTML = svgSun; if (text) text.textContent = 'Giao diện sáng'; }
   else { if (themeIcon) themeIcon.innerHTML = svgMoon; if (text) text.textContent = 'Giao diện tối'; }
+  updateMetaThemeColor();
+}
+
+function updateMetaThemeColor() {
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'dark' ? '#1e293b' : '#2563eb');
+  if (!meta) return;
+  if (currentTheme === 'dark') {
+    meta.setAttribute('content', '#0f172a');
+  } else {
+    const preset = ACCENT_PRESETS.find(p => p.id === currentAccent) || ACCENT_PRESETS[0];
+    meta.setAttribute('content', preset.color);
+  }
+}
+
+function applyAccent(accent) {
+  if (!ACCENT_PRESETS.some(p => p.id === accent)) accent = 'blue';
+  currentAccent = accent;
+  document.documentElement.setAttribute('data-accent', accent);
+  localStorage.setItem('accent', accent);
+  updateMetaThemeColor();
 }
 
 /* ===== LOCAL STORAGE ===== */
@@ -144,11 +234,11 @@ function loadLocal() {
       else if (s[k] !== undefined) state[k] = s[k];
     });
     const d = JSON.parse(localStorage.getItem(lsMonth()) || 'null');
-    if (d) state.days = d;
+    if (d) state.days = migrateDayCodes(d);
   } catch (e) {}
 }
 function loadLocalForMonth() {
-  try { state.days = JSON.parse(localStorage.getItem(lsMonth()) || 'null') || {}; }
+  try { state.days = migrateDayCodes(JSON.parse(localStorage.getItem(lsMonth()) || 'null') || {}); }
   catch (e) { state.days = {}; }
 }
 
@@ -285,13 +375,12 @@ function attachListeners() {
     if (applyingRemote) return;
     const v = snap.val();
     applyingRemote = true;
-    if (v && typeof v === 'object') state.days = v;
+    if (v && typeof v === 'object') state.days = migrateDayCodes(v);
     else if (v === null && Object.keys(state.days).length > 0) { applyingRemote = false; scheduleFirebase(); applyingRemote = true; }
     saveLocal(); renderCalendar(); renderStats(compute()); applyingRemote = false;
   });
   activeListeners.push(mRef);
 
-  // ✅ FIX: Đồng bộ tên mục hệ thống (global, mọi user đều thấy)
   const snRef = rtdb.ref(DB_ROOT + '/system/names');
   snRef.on('value', snap => {
     const v = snap.val() || {};
@@ -346,7 +435,6 @@ function onWriteError(err) { showToast('Lỗi lưu: ' + (err.message || 'không 
 function save() { saveLocal(); scheduleFirebase(); }
 function flushNow() { clearTimeout(fbTimer); if (pendingWrite) flushFirebase(); }
 
-// Gán các hàm cần thiết vào window để file auth.js có thể gọi
 window.flushNow = flushNow;
 window.detachAllListeners = detachAllListeners;
 window.closeDropdown = closeDropdown;
@@ -355,7 +443,7 @@ window.hideSheet = hideSheet;
 /* ===== COMPUTE & RENDER ===== */
 function compute() {
   const n = dim(state.year, state.month);
-  const c = { 'x':0,'x/2':0,'CT':0,'CT/2':0,'L':0,'P':0,'O':0,'TH':0,'TCN':0,'HNT':0,'HNN':0,'YBT':0,'YBN':0 };
+  const c = { 'x':0,'x/2':0,'CT':0,'CT/2':0,'L':0,'L0':0,'P':0,'O':0,'T':0,'C':0,'TrL':0,'HNT':0,'HNN':0,'YBT':0,'YBN':0 };
   let workMain = 0, workCT = 0;
 
   for (let d = 1; d <= n; d++) {
@@ -391,7 +479,7 @@ function compute() {
     else customIncomeTotal += item.value;
   });
 
-  const trucM = c['TH']*RATES.TH + c['TCN']*RATES.TCN;
+  const trucM = c['T']*RATES.T + c['C']*RATES.C + c['TrL']*RATES.TrL;
   const ctM = c['HNT']*RATES.HNT + c['HNN']*RATES.HNN + c['YBT']*RATES.YBT + c['YBN']*RATES.YBN;
   const total = salary + cashM + allowM + raisePay + customIncomeTotal + trucM + ctM;
 
@@ -422,11 +510,12 @@ function renderCalendar() {
     if (wd === 0) cls += ' sun';
     if (k === todayKey()) cls += ' today';
     if (e.main || e.truc || e.ct) cls += ' has';
+    if (isHoliday(k)) cls += ' holiday';   // ✅ badge ngày lễ
     let inner = '<span class="d">' + d + '</span>';
     
     let mainClass = '';
     if (e.main) {
-      if (e.main === 'L') mainClass = 'k-l';
+      if (e.main === 'L' || e.main === 'L0') mainClass = 'k-l';
       else if (e.main === 'P') mainClass = 'k-p';
       else if (e.main === 'O') mainClass = 'k-o';
       else if (e.main === 'CT' || e.main === 'CT/2') mainClass = 'k-ct';
@@ -439,7 +528,8 @@ function renderCalendar() {
     if (e.ct) tags.push('<i class="tg ct">' + e.ct + '</i>');
     if (tags.length) inner += '<span class="tags">' + tags.join('') + '</span>';
     
-    html += '<button type="button" class="' + cls + '" data-key="' + k + '">' + inner + '</button>';
+    const holi = getHolidayName(k);
+    html += '<button type="button" class="' + cls + '" data-key="' + k + '"' + (holi ? ' title="' + escapeHtml(holi) + '"' : '') + '>' + inner + '</button>';
   }
   $('#calGrid').innerHTML = html;
 }
@@ -455,11 +545,12 @@ function updateCell(k) {
   if (wd === 0) cls += ' sun';
   if (k === todayKey()) cls += ' today';
   if (e.main || e.truc || e.ct) cls += ' has';
+  if (isHoliday(k)) cls += ' holiday';
   
   let inner = '<span class="d">' + d + '</span>';
   if (e.main) {
     let mainClass = '';
-    if (e.main === 'L') mainClass = 'k-l';
+    if (e.main === 'L' || e.main === 'L0') mainClass = 'k-l';
     else if (e.main === 'P') mainClass = 'k-p';
     else if (e.main === 'O') mainClass = 'k-o';
     else if (e.main === 'CT' || e.main === 'CT/2') mainClass = 'k-ct';
@@ -472,15 +563,16 @@ function updateCell(k) {
   if (e.ct) tags.push('<i class="tg ct">' + e.ct + '</i>');
   if (tags.length) inner += '<span class="tags">' + tags.join('') + '</span>';
   
+  const holi = getHolidayName(k);
   const tmp = document.createElement('div');
-  tmp.innerHTML = '<button type="button" class="' + cls + '" data-key="' + k + '">' + inner + '</button>';
+  tmp.innerHTML = '<button type="button" class="' + cls + '" data-key="' + k + '"' + (holi ? ' title="' + escapeHtml(holi) + '"' : '') + '>' + inner + '</button>';
   el.replaceWith(tmp.firstElementChild);
 }
 
 function renderStats(r) {
   $('#stWork').textContent = fmtQty(r.workTotal);
   $('#stActual').textContent = fmtQty(r.actual);
-  $('#stTruc').textContent = r.c['TH'] + r.c['TCN'];
+  $('#stTruc').textContent = r.c['T'] + r.c['C'] + r.c['TrL'];
   $('#stCt').textContent = fmtQty(r.workCT);
   $('#stRank').textContent = r.rank;
   
@@ -532,8 +624,9 @@ function buildSalaryHtml(r) {
     incomeHtml += addRow(svgWallet, item.name, calc, fmtInt(amt), 'plus');
   });
   
-  if (r.c['TH']) incomeHtml += addRow(svgClock, `Trực thường × ${r.c['TH']}`, '170.000 đ/ngày', fmtInt(r.c['TH']*RATES.TH), 'plus');
-  if (r.c['TCN']) incomeHtml += addRow(svgClock, `Trực chủ nhật × ${r.c['TCN']}`, '220.000 đ/ngày', fmtInt(r.c['TCN']*RATES.TCN), 'plus');
+  if (r.c['T']) incomeHtml += addRow(svgClock, `Trực thường × ${r.c['T']}`, '170.000 đ/ngày', fmtInt(r.c['T']*RATES.T), 'plus');
+  if (r.c['C']) incomeHtml += addRow(svgClock, `Trực chủ nhật × ${r.c['C']}`, '220.000 đ/ngày', fmtInt(r.c['C']*RATES.C), 'plus');
+  if (r.c['TrL']) incomeHtml += addRow(svgClock, `Trực lễ × ${r.c['TrL']}`, '290.000 đ/ngày', fmtInt(r.c['TrL']*RATES.TrL), 'plus');
   if (r.c['HNT']) incomeHtml += addRow(svgMapPin, `Hà Nội trong giờ × ${r.c['HNT']}`, '300.000 đ/lần', fmtInt(r.c['HNT']*RATES.HNT), 'plus');
   if (r.c['HNN']) incomeHtml += addRow(svgMapPin, `Hà Nội ngoài giờ × ${r.c['HNN']}`, '330.000 đ/lần', fmtInt(r.c['HNN']*RATES.HNN), 'plus');
   if (r.c['YBT']) incomeHtml += addRow(svgMapPin, `Yên Bái trong giờ × ${r.c['YBT']}`, '180.000 đ/lần', fmtInt(r.c['YBT']*RATES.YBT), 'plus');
@@ -637,7 +730,8 @@ function openDaySheet(k) {
   const dayType = getDayType(k);
   const p = k.split('-').map(Number);
   const dt = new Date(p[0], p[1]-1, p[2]);
-  if (dayType === 'saturday') {
+  // ✅ Không auto-set x/2 nếu là ngày lễ
+  if (dayType === 'saturday' && !isHoliday(k)) {
     const cur = state.days[k];
     if (cur) {
       let ch = false;
@@ -649,11 +743,15 @@ function openDaySheet(k) {
       state.days[k] = { main: 'x/2' }; save(); updateCell(k); renderStats(compute());
     }
   }
-  const tl = dayType === 'sunday' ? 'Chủ nhật'
-           : (dayType === 'saturday' ? 'Thứ 7 · tối đa ½ ngày' : 'Ngày thường');
+  let tl;
+  if (dayType === 'sunday') tl = 'Chủ nhật';
+  else if (dayType === 'saturday') tl = 'Thứ 7 · tối đa ½ ngày';
+  else tl = 'Ngày thường';
+  const holiName = getHolidayName(k);
+  if (holiName) tl += ' · ' + holiName;   // ✅ hiển thị tên lễ
   const title = WD[dt.getDay()] + ', ' + String(p[2]).padStart(2,'0') + '/' +
                 String(p[1]).padStart(2,'0') + '/' + p[0];
-  currentGroups = getGroupsForDay(dayType);
+  currentGroups = getGroupsForDay(dayType, k);
   setSheet(title, tl, daySheetBody(), buildDayActions());
 }
 function getDayType(k) {
@@ -663,16 +761,27 @@ function getDayType(k) {
   if (wd === 6) return 'saturday';
   return 'weekday';
 }
-function getGroupsForDay(dt) {
+function getGroupsForDay(dt, k) {
+  const holiday = isHoliday(k || '');
   const ctG = { key:'ct', label:'Đi công tác', hint:'không bắt buộc', codes:['HNT','HNN','YBT','YBN'] };
-  if (dt === 'sunday') return [ { key:'truc', label:'Trực chủ nhật', hint:'', codes:['TCN'] }, ctG ];
+  
+  let trucLabel, trucCodes;
+  if (dt === 'sunday') {
+    trucLabel = 'Trực chủ nhật';
+    trucCodes = holiday ? ['C', 'TrL'] : ['C'];
+  } else {
+    trucLabel = 'Trực thường';
+    trucCodes = holiday ? ['T', 'TrL'] : ['T'];
+  }
+  
+  if (dt === 'sunday') return [ { key:'truc', label:trucLabel, hint:'', codes:trucCodes }, ctG ];
   if (dt === 'saturday') return [
-    { key:'main', label:'Công / nghỉ', hint:'tối đa ½ ngày', codes:['x/2','CT/2','L','P','O'] },
-    { key:'truc', label:'Trực thường', hint:'không bắt buộc', codes:['TH'] }, ctG
+    { key:'main', label:'Công / nghỉ', hint:'tối đa ½ ngày', codes:['x/2','CT/2','L','L0','P','O'] },
+    { key:'truc', label:trucLabel, hint:'không bắt buộc', codes:trucCodes }, ctG
   ];
   return [
-    { key:'main', label:'Công / nghỉ', hint:'chọn 1', codes:['x','x/2','CT','CT/2','L','P','O'] },
-    { key:'truc', label:'Trực thường', hint:'không bắt buộc', codes:['TH'] }, ctG
+    { key:'main', label:'Công / nghỉ', hint:'chọn 1', codes:['x','x/2','CT','CT/2','L','L0','P','O'] },
+    { key:'truc', label:trucLabel, hint:'không bắt buộc', codes:trucCodes }, ctG
   ];
 }
 
@@ -941,10 +1050,13 @@ function buildHelpBody() {
     { t: 'Công / nghỉ', i: [
       ['x', 'Đi làm (1 công)'], ['x/2', 'Làm nửa ngày (0,5)'],
       ['CT', 'Công tác (1 công)'], ['CT/2', 'Công tác nửa ngày'],
-      ['L', 'Nghỉ lễ'], ['P', 'Nghỉ phép'], ['O', 'Không phép / không lương']
+      ['L', 'Nghỉ lễ (có lương)'], ['L0', 'Nghỉ lễ (không lương)'],
+      ['P', 'Nghỉ phép'], ['O', 'Không phép / không lương']
     ]},
     { t: 'Trực', i: [
-      ['TH', 'Trực thường (170.000 đ)'], ['TCN', 'Trực chủ nhật (220.000 đ)']
+      ['T', 'Trực thường (170.000 đ)'], 
+      ['C', 'Trực chủ nhật (220.000 đ)'],
+      ['TrL', 'Trực lễ (290.000 đ) · tự hiện vào ngày lễ VN']
     ]},
     { t: 'Đi công tác', i: [
       ['HNT', 'Hà Nội · trong giờ (300.000 đ)'],
@@ -965,9 +1077,10 @@ function buildHelpBody() {
   html += '<div class="help-note">' +
     '<b>Lương theo công:</b> lương ÷ chỉ tiêu × công thực tế (vượt chỉ tiêu vẫn cộng).<br>' +
     '<b>Công tác (CT):</b> Không tính vào Công lương, chỉ tính vào tổng Công TT.<br>' +
+    '<b>Nghỉ lễ (L0):</b> Không cộng vào công lương (kể cả khi bật "Cộng Lễ/Phép").<br>' +
     '<b>Tiền mặt &amp; Trợ cấp:</b> trần tại chỉ tiêu (24).<br>' +
-    '<b>Thứ 7:</b> tối đa ½ ngày. <b>CN:</b> chỉ TCN và công tác.<br>' +
-    'Người dùng đầu tiên là <b>Admin</b>. Dữ liệu lưu riêng theo tài khoản.' +
+    '<b>Thứ 7:</b> tối đa ½ ngày. <b>CN:</b> chỉ C và công tác.<br>' +
+    '<b>Ngày lễ VN:</b> có chấm đỏ trên lịch — mở ngày thấy TrL và tên lễ.' +
   '</div>';
   return html;
 }
@@ -1100,12 +1213,35 @@ async function toggleUserRole(uid, currentRoleVal, btn) {
   } catch (e) { btn.disabled = false; showToast('Lỗi: ' + (e.message || 'không rõ')); }
 }
 
+/* ===== ACCENT PICKER ===== */
+function openAccentPicker() {
+  activeDay = null; sheetMode = 'accent';
+  setSheet('Màu chủ đề', 'Chọn màu giao diện yêu thích', buildAccentBody(),
+    '<button type="button" class="btn primary" data-act="done">Đóng</button>');
+}
+
+function buildAccentBody() {
+  let html = '<div class="accent-grid">';
+  ACCENT_PRESETS.forEach(p => {
+    const on = currentAccent === p.id;
+    html += `<button type="button" class="accent-item${on ? ' on' : ''}" data-accent-id="${p.id}">
+      <span class="accent-swatch" style="background:${p.color}">
+        ${on ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </span>
+      <span class="accent-name">${escapeHtml(p.name)}</span>
+    </button>`;
+  });
+  html += '</div>';
+  return html;
+}
+
 /* ===== DROPDOWN ===== */
 function closeDropdown() { $('#dropdown').classList.remove('open'); }
 
 /* ===== KHỞI TẠO VÀ GẮN SỰ KIỆN ===== */
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme);
+  applyAccent(currentAccent);
   initFirebase();
 
   if (firebaseReady) {
@@ -1129,9 +1265,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof authError === 'function') authError('Không tải được Firebase SDK');
   }
 
-  // === CÁC SỰ KIỆN UI ===
-  
-    // Header Scroll (Đã tối ưu chống giật)
   const mainHeader = document.getElementById('mainHeader');
   let isHeaderCollapsed = false;
   let scrollTicking = false;
@@ -1152,7 +1285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, { passive: true });
 
-  // Avatar & Dropdown
   const avatarBtn = $('#avatarBtn');
   const dropdown = $('#dropdown');
   avatarBtn.addEventListener('click', e => { 
@@ -1167,6 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (a === 'admin') openAdmin();
     else if (a === 'profile') openProfile();
     else if (a === 'theme') { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    else if (a === 'accent') { openAccentPicker(); }
     else if (a === 'help') openHelp();
     else if (a === 'logout') { if (typeof logout === 'function') logout(); }
   });
@@ -1177,7 +1310,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDropdown(); });
 
-  // Tháng
   $('#prevMonth').addEventListener('click', () => {
     flushNow(); hideSheet();
     let m = state.month - 1, y = state.year;
@@ -1195,13 +1327,11 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#monthLabel').addEventListener('click', openMonthSheet);
   $('#btnHelp').addEventListener('click', openHelp);
 
-  // Chạm vào ô ngày
   $('#calGrid').addEventListener('click', e => {
     const cell = e.target.closest('.cell[data-key]'); if (!cell) return;
     openDaySheet(cell.dataset.key); tapFeedback();
   });
 
-  // Điền nhanh
   function fillWeekdays(lastDay) {
     const n = dim(state.year, state.month); let count = 0;
     for (let d = 1; d <= n; d++) {
@@ -1224,12 +1354,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAll(); save(); showToast('Đã xóa tháng ' + state.month);
   });
 
-  // Sheet Backdrop & Close
   $('#backdrop').addEventListener('click', hideSheet);
   $('#sheetClose').addEventListener('click', hideSheet);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hideSheet(); });
 
-  // Modal Add Item Events
   $('#addModalClose').addEventListener('click', closeAddModal);
   $('#addModalCancel').addEventListener('click', closeAddModal);
   $('#addModalBackdrop').addEventListener('click', closeAddModal);
@@ -1248,10 +1376,8 @@ document.addEventListener('DOMContentLoaded', () => {
     closeAddModal(); refreshUI(); openSettings();
   });
 
-  // Xem chi tiết lương
   $('#bbDetail').addEventListener('click', openSalary);
 
-  // File Upload Avatar
   $('#avatarInput').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Vui lòng chọn file ảnh'); return; }
@@ -1274,14 +1400,24 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(file); e.target.value = '';
   });
 
-  // === SỰ KIỆN BÊN TRONG SHEET ===
   $('#sheetBody').addEventListener('click', async e => {
-    // 1. Edit System Name (Admin only) — ✅ FIX
+    if (sheetMode === 'accent') {
+      const accBtn = e.target.closest('[data-accent-id]');
+      if (accBtn) {
+        const id = accBtn.dataset.accentId;
+        applyAccent(id);
+        $('#sheetBody').innerHTML = buildAccentBody();
+        const preset = ACCENT_PRESETS.find(p => p.id === id);
+        showToast('Đã đổi màu: ' + (preset ? preset.name : id));
+      }
+      return;
+    }
+
     const editSys = e.target.closest('[data-edit-sys]');
     if (editSys) {
       if (currentRole !== 'admin') return;
       const path = editSys.dataset.editSys;
-      const key = path.split('.')[1];           // income.base -> 'base'
+      const key = path.split('.')[1];
       const currentName = state.sysNames[key] || '';
 
       const newName = prompt('Sửa tên mục (sẽ đồng bộ cho tất cả User):', currentName);
@@ -1290,10 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         await rtdb.ref(DB_ROOT + '/system/names/' + key).set(trimmed);
-
-        // Cập nhật local ngay để UI phản ánh tức thì
         state.sysNames[key] = trimmed;
-
         showToast('Đã cập nhật tên mục');
         openSettings();
       } catch (err) {
@@ -1308,7 +1441,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2. Delete Custom Item
     const delCustom = e.target.closest('[data-del-custom]');
     if (delCustom) {
       if (!confirm('Xóa mục này?')) return;
@@ -1320,24 +1452,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 3. Add Item Flow
     const addBtn = e.target.closest('[data-add]');
     if (addBtn) { openAddModal(addBtn.dataset.add); return; }
 
-     // 4. Tự động tính công chuẩn
     if (e.target.closest('[data-act="autostd"]')) {
       const cnt = calcAutoStandard(state.year, state.month);
       state.capStandard = cnt; 
       state.standard = cnt; 
-      
-      save(); // <--- THÊM DÒNG NÀY ĐỂ LƯU NGAY LẬP TỨC
-      
-      openSettings(); // Render lại giao diện để hiện số mới
+      save();
+      openSettings();
       showToast('Đã tính công chuẩn: ' + fmtQty(cnt));
       return;
     }
 
-    // 5. Chọn tháng
     if (sheetMode === 'month') {
       const yb = e.target.closest('[data-yshift]');
       if (yb) { pickYear += Number(yb.dataset.yshift); $('#sheetBody').innerHTML = buildMonthBody(); return; }
@@ -1349,7 +1476,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 6. Chọn ngày
     if (sheetMode === 'day') {
       const chip = e.target.closest('.pop-opt'); if (!chip || !activeDay) return;
       const g = chip.dataset.g, c = chip.dataset.c;
@@ -1363,7 +1489,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Input thay đổi trong Settings
   $('#sheetBody').addEventListener('input', e => {
     if (sheetMode !== 'settings') return;
     const f = e.target.dataset.field; if (!f) return;
@@ -1374,11 +1499,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Phân biệt ô nhập tiền (text) và ô nhập công (number)
     let val;
     if (e.target.type === 'text') {
       val = parseMoneyInput(e.target.value);
-      // Cập nhật lại giá trị hiển thị với dấu chấm
       e.target.value = formatMoneyInput(val);
     } else {
       val = parseFloat(e.target.value) || 0;
@@ -1405,7 +1528,6 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshUI(); updateSettingsPreview();
   });
 
-  // Click các nút ở Footer Sheet
   $('#sheetActions').addEventListener('click', e => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     if (b.dataset.act === 'done') {
@@ -1422,7 +1544,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Click đổi Role trong Admin
   $('#sheetBody').addEventListener('click', e => {
     const roleBtn = e.target.closest('[data-toggle-role]');
     if (roleBtn && sheetMode === 'admin') {
