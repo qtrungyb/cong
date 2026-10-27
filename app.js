@@ -4,6 +4,13 @@ const LS_OLD = 'bangcong_v29';
 const WD = ['CN','T2','T3','T4','T5','T6','T7'];
 
 const RATES = { TH:170000, TCN:220000, HNT:300000, HNN:330000, YBT:180000, YBN:200000 };
+
+// ✅ NEW: Tên mục mặc định dùng chung cho khởi tạo & reset
+const DEFAULT_SYS_NAMES = {
+  base: 'Lương cơ bản', cash: 'Tiền mặt', allowance: 'Trợ cấp', raise: 'Lương tăng',
+  bhxh: 'BHXH', bhyt: 'BHYT', bhtn: 'BHTN', quy: 'Quỹ khoa / Hội ĐD', cd: 'Công đoàn', qdd: 'Quỹ Điều dưỡng'
+};
+
 const MAIN_VALUE = { 'x':1, 'x/2':0.5, 'CT':1, 'CT/2':0.5, 'L':0, 'P':0, 'O':0 };
 const INFO = {
   'x':    { code:'x',    label:'Đi làm',         sub:'1 công' },
@@ -40,10 +47,8 @@ const state = {
   raiseMax: 480000, raiseStandard: 24, countLeave: false,
   ded: { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 },
   customIncome: [], customDeductions: [], days: {},
-  sysNames: {
-    base: 'Lương cơ bản', cash: 'Tiền mặt', allowance: 'Trợ cấp', raise: 'Lương tăng',
-    bhxh: 'BHXH', bhyt: 'BHYT', bhtn: 'BHTN', quy: 'Quỹ khoa / Hội ĐD', cd: 'Công đoàn', qdd: 'Quỹ Điều dưỡng'
-  }
+  // ✅ FIX: dùng hằng số mặc định
+  sysNames: { ...DEFAULT_SYS_NAMES }
 };
 
 let currentUid = null, currentEmail = '', currentRole = null;
@@ -61,7 +66,14 @@ const fmtInt = n => nf.format(Math.round(n || 0));
 const fmtMoney = n => fmtInt(n) + ' đ';
 const fmtQty = n => nf.format(Math.round((n || 0) * 10) / 10);
 const tapFeedback = () => { if (navigator.vibrate) navigator.vibrate(8); };
-
+function formatMoneyInput(num) {
+  if (num === '' || num === null || num === undefined) return '';
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+function parseMoneyInput(str) {
+  if (!str) return 0;
+  return parseInt(str.toString().replace(/\./g, ''), 10) || 0;
+}
 function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function getInitial(name, email) { let n = (name || '').trim(); if (n) { const parts = n.split(/\s+/); return parts[parts.length - 1].charAt(0).toUpperCase(); } return (email || '?').trim().charAt(0).toUpperCase() || '?'; }
 function avatarColor(str) { if (!str) return '#2563eb'; let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); const colors = ['#2563eb','#7c3aed','#db2777','#dc2626','#ea580c','#ca8a04','#16a34a','#0891b2','#0f766e']; return colors[Math.abs(hash) % colors.length]; }
@@ -76,10 +88,8 @@ function resetState() {
   state.ded = { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 };
   state.customIncome = []; state.customDeductions = []; state.days = {};
   currentProfile = { displayName: '', photoURL: '' };
-  state.sysNames = {
-    base: 'Lương cơ bản', cash: 'Tiền mặt', allowance: 'Trợ cấp', raise: 'Lương tăng',
-    bhxh: 'BHXH', bhyt: 'BHYT', bhtn: 'BHTN', quy: 'Quỹ khoa / Hội ĐD', cd: 'Công đoàn', qdd: 'Quỹ Điều dưỡng'
-  };
+  // ✅ FIX: dùng hằng số mặc định
+  state.sysNames = { ...DEFAULT_SYS_NAMES };
 }
 
 function calcAutoStandard(y, m) {
@@ -280,6 +290,23 @@ function attachListeners() {
     saveLocal(); renderCalendar(); renderStats(compute()); applyingRemote = false;
   });
   activeListeners.push(mRef);
+
+  // ✅ FIX: Đồng bộ tên mục hệ thống (global, mọi user đều thấy)
+  const snRef = rtdb.ref(DB_ROOT + '/system/names');
+  snRef.on('value', snap => {
+    const v = snap.val() || {};
+    const merged = { ...DEFAULT_SYS_NAMES, ...v };
+    let changed = false;
+    for (const k of Object.keys(merged)) {
+      if (state.sysNames[k] !== merged[k]) { changed = true; break; }
+    }
+    state.sysNames = merged;
+    if (changed && sheetMode === 'settings') {
+      const bodyEl = $('#sheetBody');
+      if (bodyEl) bodyEl.innerHTML = buildSettingsBody();
+    }
+  });
+  activeListeners.push(snRef);
 }
 
 function detachAllListeners() { activeListeners.forEach(ref => { try { ref.off(); } catch (e) {} }); activeListeners = []; }
@@ -680,13 +707,20 @@ function buildSettingsBody() {
   const addIncomeRow = (key, name, value, isCustom) => {
     const editBtn = (!isCustom && currentRole === 'admin') ? getSvgEdit(`income.${key}`) : '';
     const delBtn = isCustom ? `<button class="set-del-btn" data-del-custom="income.${key}">${svgTrash}</button>` : '';
+    
+    let hint = '';
+    if (key === 'base') hint = 'Lương cứng theo hợp đồng';
+    if (key === 'cash') hint = 'Tối đa theo chỉ tiêu';
+    if (key === 'allowance') hint = 'Tối đa theo chỉ tiêu';
+    if (key === 'raise') hint = 'Tối đa theo chỉ tiêu';
+
     return `
       <div class="set-row">
         <div class="set-row-left">
           <span class="set-row-label">${escapeHtml(name)} ${editBtn}</span>
-          ${isCustom ? '<span class="custom-item-tag">Tùy chỉnh</span>' : ''}
+          ${isCustom ? '<span class="custom-item-tag">Tùy chỉnh</span>' : (hint ? `<span class="field-hint">${hint}</span>` : '')}
         </div>
-        <input type="number" class="set-row-input" data-field="${isCustom ? 'customIncome' : 'income'}.${key}" value="${value}">
+        <input type="text" inputmode="numeric" class="set-row-input" data-field="${isCustom ? 'customIncome' : 'income'}.${key}" value="${formatMoneyInput(value)}">
         ${delBtn}
       </div>
     `;
@@ -713,7 +747,7 @@ function buildSettingsBody() {
           <span class="set-row-label">${escapeHtml(name)} ${editBtn}</span>
           ${isCustom ? '<span class="custom-item-tag">Tùy chỉnh</span>' : ''}
         </div>
-        <input type="number" class="set-row-input" data-field="${isCustom ? 'customDeductions' : 'ded'}.${key}" value="${value}">
+        <input type="text" inputmode="numeric" class="set-row-input" data-field="${isCustom ? 'customDeductions' : 'ded'}.${key}" value="${formatMoneyInput(value)}">
         ${delBtn}
       </div>
     `;
@@ -729,21 +763,39 @@ function buildSettingsBody() {
   return `
     <div class="set-group-title">Cài đặt chung</div>
     <div class="set-group">
-      <div class="set-grid-2">
-        <div class="field"><label>Công đạt chỉ tiêu</label><input data-field="capStandard" type="number" value="${state.capStandard}"></div>
-        <div class="field"><label>Công chuẩn xếp loại</label><input data-field="standard" type="number" value="${state.standard}"></div>
-        <div class="field"><label>Công tối đa (Lương tăng)</label><input data-field="raiseStandard" type="number" value="${state.raiseStandard}"></div>
+      <div class="set-row">
+        <div class="set-row-left">
+          <span class="set-row-label">Công đạt chỉ tiêu</span>
+          <span class="field-hint">Mốc tính Lương cơ bản, Tiền mặt, Trợ cấp</span>
+        </div>
+        <input type="number" step="0.5" class="set-row-input" data-field="capStandard" value="${state.capStandard}">
       </div>
       
-      <div class="set-row" style="padding-top: 4px; padding-bottom: 8px; justify-content: flex-start; border-bottom: 1px solid var(--border); border-top: 0;">
-        <button type="button" class="linkbtn" data-act="autostd" style="display:flex; align-items:center; gap:6px; font-size:13px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          Tự tính công chuẩn tháng ${state.month}
-        </button>
+      <div class="set-row">
+        <div class="set-row-left">
+          <span class="set-row-label">Công chuẩn xếp loại</span>
+          <span class="field-hint">Dùng để tính hạng A, B, C, TẠCH</span>
+        </div>
+        <input type="number" step="0.5" class="set-row-input" data-field="standard" value="${state.standard}">
       </div>
 
       <div class="set-row">
-        <div class="set-row-left"><span class="set-row-label">Cộng Lễ/Phép vào công lương</span></div>
+        <div class="set-row-left">
+          <span class="set-row-label">Công tối đa (Lương tăng)</span>
+          <span class="field-hint">Mốc đạt mức Lương tăng tối đa</span>
+        </div>
+        <input type="number" step="0.5" class="set-row-input" data-field="raiseStandard" value="${state.raiseStandard}">
+      </div>
+      
+      <div class="set-action-row" data-act="autostd">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        Tự tính công chuẩn tháng ${state.month}
+      </div>
+
+      <div class="set-row">
+        <div class="set-row-left">
+          <span class="set-row-label">Cộng Lễ/Phép vào lương</span>
+        </div>
         <label class="ios-switch">
           <input type="checkbox" data-field="countLeave" ${state.countLeave?'checked':''}>
           <span class="ios-slider"></span>
@@ -751,25 +803,34 @@ function buildSettingsBody() {
       </div>
     </div>
 
-    <div class="set-group-title">Thu nhập</div>
+    <div class="set-group-title income">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+      Thu nhập
+    </div>
     <div class="set-group">
       ${incomeRows}
-    </div>
-    <div class="set-add-row" data-add="income">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Thêm khoản thu nhập
+      <div class="set-add-row" data-add="income">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Thêm khoản thu nhập
+      </div>
     </div>
 
-    <div class="set-group-title">Khấu trừ</div>
+    <div class="set-group-title deduction">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      Khấu trừ
+    </div>
     <div class="set-group">
       ${dedRows}
-    </div>
-    <div class="set-add-row" data-add="deduction">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Thêm khoản khấu trừ
+      <div class="set-add-row" data-add="deduction">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Thêm khoản khấu trừ
+      </div>
     </div>
 
-    <div class="set-preview"><span>Thực lĩnh dự kiến</span><strong id="setPreview">0 đ</strong></div>
+    <div class="set-preview">
+      <span>Thực lĩnh dự kiến</span>
+      <strong id="setPreview">0 đ</strong>
+    </div>
   `;
 }
 function populateSettingsInputs() { /* Inputs already populated */ }
@@ -1215,21 +1276,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === SỰ KIỆN BÊN TRONG SHEET ===
   $('#sheetBody').addEventListener('click', async e => {
-    // 1. Edit System Name (Admin only)
+    // 1. Edit System Name (Admin only) — ✅ FIX
     const editSys = e.target.closest('[data-edit-sys]');
     if (editSys) {
       if (currentRole !== 'admin') return;
       const path = editSys.dataset.editSys;
-      const [group, key] = path.split('.');
-      const currentName = state.sysNames[key];
-      
+      const key = path.split('.')[1];           // income.base -> 'base'
+      const currentName = state.sysNames[key] || '';
+
       const newName = prompt('Sửa tên mục (sẽ đồng bộ cho tất cả User):', currentName);
-      if (newName && newName.trim() && newName.trim() !== currentName) {
-        try {
-          await rtdb.ref(DB_ROOT + '/system/names/' + key).set(newName.trim());
-          showToast('Đã cập nhật tên mục');
-          openSettings();
-        } catch (err) { showToast('Lỗi: ' + err.message); }
+      const trimmed = (newName || '').trim();
+      if (!trimmed || trimmed === currentName) return;
+
+      try {
+        await rtdb.ref(DB_ROOT + '/system/names/' + key).set(trimmed);
+
+        // Cập nhật local ngay để UI phản ánh tức thì
+        state.sysNames[key] = trimmed;
+
+        showToast('Đã cập nhật tên mục');
+        openSettings();
+      } catch (err) {
+        console.error('[editSys]', err);
+        const msg = (err && err.message) ? err.message : 'không rõ';
+        if (msg.includes('PERMISSION_DENIED')) {
+          showToast('Không có quyền sửa. Cần cập nhật Firebase Rules cho /system/names');
+        } else {
+          showToast('Lỗi: ' + msg);
+        }
       }
       return;
     }
@@ -1250,11 +1324,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const addBtn = e.target.closest('[data-add]');
     if (addBtn) { openAddModal(addBtn.dataset.add); return; }
 
-    // 4. Tự động tính công chuẩn
+     // 4. Tự động tính công chuẩn
     if (e.target.closest('[data-act="autostd"]')) {
       const cnt = calcAutoStandard(state.year, state.month);
-      state.capStandard = cnt; state.standard = cnt; 
-      openSettings();
+      state.capStandard = cnt; 
+      state.standard = cnt; 
+      
+      save(); // <--- THÊM DÒNG NÀY ĐỂ LƯU NGAY LẬP TỨC
+      
+      openSettings(); // Render lại giao diện để hiện số mới
       showToast('Đã tính công chuẩn: ' + fmtQty(cnt));
       return;
     }
@@ -1296,8 +1374,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
+    // Phân biệt ô nhập tiền (text) và ô nhập công (number)
+    let val;
+    if (e.target.type === 'text') {
+      val = parseMoneyInput(e.target.value);
+      // Cập nhật lại giá trị hiển thị với dấu chấm
+      e.target.value = formatMoneyInput(val);
+    } else {
+      val = parseFloat(e.target.value) || 0;
+    }
+    
     const [group, key] = f.split('.');
-    const val = parseFloat(e.target.value) || 0;
     
     if (group === 'customIncome') {
       const item = state.customIncome.find(i => i.id === key);
