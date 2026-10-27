@@ -1,285 +1,136 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
 <title>Bảng công &amp; lương</title>
-<style>
-:root{
-  --bg:#eef1f7; --card:#fff; --text:#121a26; --muted:#68748a;
-  --primary:#2563eb; --primary-soft:#e4ecff; --border:#e3e8f0;
-  --truc:#b45309; --truc-soft:#fff2d6; --truc-line:#fde68a;
-  --ct:#047857; --ct-soft:#e3f7ec; --ct-line:#a7f3d0;
-  --danger:#dc2626; --radius:16px;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
-body{
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  background:var(--bg);color:var(--text);font-size:15px;line-height:1.4;
-  padding-bottom:calc(84px + env(safe-area-inset-bottom));
-  -webkit-text-size-adjust:100%;
-}
-.app{max-width:600px;margin:0 auto;padding:0 12px}
-
-/* ---------- header ---------- */
-.hdr{position:sticky;top:0;z-index:30;margin:0 -12px;padding:8px 12px;
-  background:rgba(238,241,247,.95);
-  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  border-bottom:1px solid rgba(227,232,240,.9)}
-.topbar{display:flex;align-items:center;gap:6px}
-.navbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff;
-  font-size:20px;line-height:1;color:var(--primary);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
-.navbtn:active{background:var(--primary-soft)}
-.iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:#fff;
-  color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0;
-  transition:background .12s,color .12s}
-.iconbtn:active{background:var(--primary-soft);color:var(--primary)}
-.iconbtn svg{display:block}
-.monthlabel{flex:1;height:40px;border:1px solid var(--border);background:#fff;border-radius:12px;
-  font:inherit;font-weight:800;font-size:15px;color:var(--text);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;padding:0 8px}
-.monthlabel .caret{color:var(--muted);font-size:10px}
-.monthlabel:active{background:#f7f9fd}
-
-/* ---------- cards ---------- */
-.card{background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:12px;
-  box-shadow:0 1px 2px rgba(16,24,40,.05),0 6px 18px -12px rgba(16,24,40,.25)}
-.card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.card-title{margin:0;font-size:11.5px;font-weight:800;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--muted)}
-.hd-actions{display:flex;gap:2px}
-.link{background:none;border:0;font:inherit;font-size:11.5px;font-weight:800;color:var(--primary);
-  padding:6px 8px;border-radius:7px;cursor:pointer;white-space:nowrap}
-.link.danger{color:var(--danger)}
-.link:active{background:#eef1f7}
-
-/* ---------- stats ---------- */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:10px}
-.stat{background:#f6f8fc;border-radius:10px;padding:6px 2px;text-align:center;min-width:0}
-.stat .lbl{display:block;font-size:8.5px;color:var(--muted);font-weight:800;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
-.stat strong{display:block;font-size:14px;font-variant-numeric:tabular-nums;line-height:1.3;font-weight:800}
-.stat.s-work strong{color:var(--primary)}
-.stat.s-actual strong{color:#0a7a45}
-.stat.s-truc strong{color:var(--truc)}
-.stat.s-ct strong{color:var(--ct)}
-.stat.s-rank strong{font-size:13.5px}
-.stat.s-rank.r-A strong{color:#0a7a45}
-.stat.s-rank.r-B strong{color:var(--primary)}
-.stat.s-rank.r-C strong{color:#b45309}
-.stat.s-rank.r-T strong{color:var(--danger)}
-
-/* ---------- calendar ---------- */
-.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px}
-.cal-head span{text-align:center;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.02em}
-.cal-head span.sun{color:#c62828}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.cell{
-  appearance:none;-webkit-appearance:none;font:inherit;color:inherit;
-  position:relative;height:68px;border-radius:12px;
-  display:flex;flex-direction:column;align-items:center;
-  padding:4px 3px 4px;cursor:pointer;text-align:center;
-  border:1.5px solid transparent;background:#f7f9fd;
-  overflow:hidden;transition:background .12s,transform .1s;
-}
-.cell:active{transform:scale(.94);background:#e4ecff}
-.cell.empty{background:transparent;pointer-events:none;border-color:transparent}
-.cell.sun{background:#fff1f2}
-.cell.sun.has{background:#fff;border-color:#fca5a5}
-.cell.has{background:#fff;border-color:#e3e8f0}
-.cell.has:active{background:#e4ecff}
-.cell.today{border-color:var(--primary);border-width:2px;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-.cell .d{font-size:12.5px;font-weight:800;color:#95a2b6;line-height:1;font-variant-numeric:tabular-nums;
-  position:relative;padding-top:1px}
-.cell.has .d{color:var(--text)}
-.cell.sun .d{color:#c62828}
-.cell.today .d{color:var(--primary)}
-
-.cell .m{margin-top:4px;font-size:10.5px;font-weight:900;line-height:16px;border-radius:5px;
-  padding:0 6px;max-width:calc(100% - 2px);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.m.k-x{background:#dbeafe;color:#1d4ed8}
-.m.k-ct{background:#d1fae5;color:#047857}
-.m.k-l{background:#ede9fe;color:#6d28d9}
-.m.k-p{background:#cffafe;color:#0e7490}
-.m.k-o{background:#fee2e2;color:#b91c1c}
-
-.cell .tags{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
-  display:flex;gap:2px;max-width:100%;justify-content:center;overflow:hidden}
-.tg{font-size:8.5px;font-weight:900;line-height:12px;padding:0 3px;border-radius:3px;font-style:normal}
-.tg.truc{background:var(--truc-line);color:#7c2d12}
-.tg.ct{background:var(--ct-line);color:#064e3b}
-
-.cal-hint{font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.45}
-.cal-hint b{color:var(--text)}
-
-/* ---------- bottom bar ---------- */
-.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0 auto;max-width:600px;
-  background:#fff;border-top:1px solid var(--border);
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  box-shadow:0 -6px 20px -10px rgba(16,24,40,.35)}
-.bb-left{display:flex;flex-direction:column;line-height:1.15;min-width:0}
-.bb-left span{font-size:10.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
-.bb-left strong{font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;
-  color:var(--primary);overflow:hidden;text-overflow:ellipsis}
-.btn{border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:800;font-size:14px;cursor:pointer}
-.btn.primary{background:var(--primary);color:#fff}
-.btn.ghost{background:#f1f4f9;color:var(--muted)}
-.btn.danger{background:#fef2f2;color:var(--danger)}
-.btn:active{transform:scale(.97)}
-
-/* ========== SHEET ========== */
-.backdrop{position:fixed;inset:0;background:rgba(12,18,28,.45);opacity:0;pointer-events:none;
-  transition:opacity .22s;z-index:50}
-.backdrop.open{opacity:1;pointer-events:auto}
-
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0 auto;max-width:600px;
-  background:#fff;border-radius:22px 22px 0 0;
-  transform:translateY(110%);transition:transform .28s cubic-bezier(.32,.72,0,1);
-  max-height:90vh;display:flex;flex-direction:column;
-  box-shadow:0 -10px 40px -12px rgba(16,24,40,.45)}
-.sheet.open{transform:translateY(0)}
-.sheet-handle{width:40px;height:4px;border-radius:99px;background:#dfe4ee;margin:8px auto 0;flex:0 0 auto}
-
-.sh-hd{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;flex:0 0 auto;
-  border-bottom:1px solid var(--border)}
-.sh-date{flex:1;min-width:0;font-size:17px;font-weight:800;line-height:1.2}
-.sh-date small{display:block;font-size:12px;font-weight:600;color:var(--muted);
-  margin-top:2px;letter-spacing:.02em}
-.sh-x{width:36px;height:36px;border-radius:50%;border:0;background:#f1f4f9;
-  color:var(--muted);font-size:15px;font-weight:800;display:grid;place-items:center;
-  cursor:pointer;flex:0 0 auto}
-.sh-x:active{background:#e3e8f0}
-
-.sh-body{flex:1 1 auto;overflow-y:auto;padding:14px 16px 8px;
-  -webkit-overflow-scrolling:touch}
-
-.sh-ft{flex:0 0 auto;display:flex;gap:10px;
-  padding:12px 16px calc(14px + env(safe-area-inset-bottom));
-  background:#fff;border-top:1px solid var(--border)}
-.sh-ft .btn{flex:1}
-.sh-ft .btn.danger{flex:0 0 auto;padding:12px 20px}
-
-/* day-sheet */
-.pgrp{margin-bottom:18px}
-.pgrp:last-child{margin-bottom:6px}
-.pgrp-lbl{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
-.pgrp-lbl .name{font-size:12px;font-weight:800;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.06em}
-.pgrp-lbl .hint{font-size:11px;color:#a6b1c2;font-weight:600}
-.popts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.popts.one{grid-template-columns:1fr}
-.pop-opt{
-  appearance:none;-webkit-appearance:none;
-  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
-  gap:2px;padding:10px 12px;min-height:52px;min-width:0;
-  border:1.5px solid var(--border);border-radius:10px;
-  background:#fff;color:var(--text);
-  font:inherit;text-align:left;cursor:pointer;
-  transition:background .12s,border-color .12s,transform .1s;
-}
-.pop-opt:active{transform:scale(.97);background:#f7f9fd}
-.pop-opt .l{font-size:13px;font-weight:800;line-height:1.25;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.pop-opt .s{font-size:11px;font-weight:600;color:var(--muted);line-height:1.2;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.pop-opt.on{border-color:transparent;color:#fff}
-.pop-opt.on .s{color:rgba(255,255,255,.88)}
-.pop-opt.on.main{background:var(--primary)}
-.pop-opt.on.truc{background:var(--truc)}
-.pop-opt.on.ct{background:var(--ct)}
-
-/* month-sheet */
-.yearrow{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px}
-.yearrow strong{font-size:18px}
-.months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.mbtn{height:52px;border-radius:12px;border:1.5px solid var(--border);background:#fff;
-  font:inherit;font-weight:800;font-size:14px;color:var(--text);cursor:pointer;
-  transition:background .12s,color .12s,transform .1s}
-.mbtn.on{background:var(--primary);color:#fff;border-color:var(--primary)}
-.mbtn:active{transform:scale(.96)}
-
-/* settings-sheet */
-.field{display:flex;flex-direction:column;gap:4px;margin-top:10px;min-width:0}
-.field label{font-size:11.5px;color:var(--muted);font-weight:700}
-.field input{height:42px;border-radius:10px;border:1px solid var(--border);padding:0 12px;
-  font-size:15px;font-family:inherit;background:#fbfcfe;color:var(--text);width:100%}
-.field input:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.linkbtn{background:none;border:0;padding:1px 0 0;color:var(--primary);font:inherit;
-  font-size:11.5px;font-weight:700;text-align:left;cursor:pointer}
-.switch{display:flex;align-items:center;gap:10px;margin-top:2px;font-size:13px;font-weight:600}
-.switch input{width:20px;height:20px;accent-color:var(--primary);flex:0 0 auto}
-.set-preview{margin-top:14px;background:var(--primary-soft);border-radius:12px;
-  padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.set-preview span{font-size:11px;font-weight:800;color:#1d4ed8;
-  text-transform:uppercase;letter-spacing:.05em}
-.set-preview strong{font-size:17px;font-weight:800;color:var(--primary);
-  font-variant-numeric:tabular-nums}
-
-/* help-sheet */
-.help-grp{margin-bottom:18px}
-.help-grp:last-child{margin-bottom:0}
-.help-grp h3{font-size:11.5px;font-weight:800;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px}
-.help-list{display:flex;flex-direction:column;gap:6px}
-.help-item{display:flex;align-items:center;gap:10px;
-  padding:8px 10px;background:#f7f9fd;border-radius:9px}
-.help-code{min-width:42px;height:28px;padding:0 8px;border-radius:6px;
-  background:#fff;border:1px solid var(--border);
-  display:grid;place-items:center;font-size:11.5px;font-weight:900;
-  color:var(--text);flex:0 0 auto;letter-spacing:-.02em}
-.help-desc{font-size:12.5px;color:var(--text);font-weight:600}
-.help-note{margin-top:14px;padding:10px 12px;background:#f7f9fd;border-radius:10px;
-  font-size:12px;color:var(--muted);line-height:1.55}
-.help-note b{color:var(--text)}
-
-/* salary-sheet */
-.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
-.tbl th{font-size:10.5px;color:var(--muted);text-align:right;font-weight:800;
-  text-transform:uppercase;letter-spacing:.05em;padding:0 4px 8px;border-bottom:1px solid var(--border)}
-.tbl th:first-child{text-align:left}
-.tbl td{padding:8px 4px;border-bottom:1px solid var(--border);vertical-align:top}
-.tbl td:nth-child(2){color:var(--muted);font-size:11.5px;text-align:right;white-space:nowrap}
-.tbl td:nth-child(3){text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tbl tr.total td{font-weight:800;border-bottom:0;padding-top:14px}
-.tbl tr.total td:first-child{text-transform:uppercase;font-size:12px;letter-spacing:.04em}
-.tbl tr.take td{font-weight:800;font-size:17px;color:var(--primary);border-bottom:0;padding-top:10px}
-.tbl tr.take td:first-child{text-transform:uppercase;font-size:12.5px;letter-spacing:.04em}
-
-/* toast */
-.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));z-index:70;
-  transform:translate(-50%,20px);background:#121a26;color:#fff;
-  padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;
-  white-space:nowrap;opacity:0;pointer-events:none;
-  transition:opacity .2s,transform .2s;box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
-.toast.show{opacity:1;transform:translate(-50%,0)}
-
-@media (min-width:520px){
-  .cell{height:74px}
-  .cell .m{font-size:11.5px}
-  .stat strong{font-size:16px}
-  .pop-opt{min-height:56px}
-  .navbtn{width:42px;height:42px}
-  .iconbtn{width:40px;height:40px}
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="app">
-  <header class="hdr">
-    <div class="topbar">
-      <button class="navbtn" id="prevMonth" aria-label="Tháng trước">‹</button>
-      <button class="monthlabel" id="monthLabel">Tháng —<span class="caret">▾</span></button>
-      <button class="navbtn" id="nextMonth" aria-label="Tháng sau">›</button>
-      <button class="iconbtn" id="btnSettings" aria-label="Cài đặt">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+<div class="screen-loading" id="loadingScreen">Đang tải…</div>
+
+<!-- AUTH SCREEN -->
+<div class="screen-auth" id="authScreen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </div>
+    <h1 class="auth-title" id="authTitle">Đăng nhập</h1>
+
+    <form id="authForm" autocomplete="on" novalidate>
+      <div class="auth-field" id="nameField" style="display:none">
+        <label for="authName">Tên người dùng</label>
+        <div class="auth-input-wrap">
+          <svg class="auth-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="authName" placeholder="VD: Quang Trung">
+        </div>
+      </div>
+
+      <div class="auth-field">
+        <label for="authEmail">Tên đăng nhập</label>
+        <div class="auth-input-wrap">
+          <svg class="auth-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="authEmail" required autocomplete="username" placeholder="Tên đăng nhập" inputmode="email">
+        </div>
+      </div>
+      
+      <div class="auth-field">
+        <label for="authPassword">Mật khẩu</label>
+        <div class="auth-input-wrap">
+          <svg class="auth-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="authPassword" required minlength="6" autocomplete="current-password" placeholder="Mật khẩu">
+          <button type="button" class="auth-toggle-pw" id="togglePw" aria-label="Hiện/ẩn mật khẩu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-field" id="confirmPwField" style="display:none">
+        <label for="authConfirmPw">Gõ lại mật khẩu</label>
+        <div class="auth-input-wrap">
+          <svg class="auth-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="authConfirmPw" placeholder="Gõ lại mật khẩu">
+        </div>
+      </div>
+      
+      <label class="auth-remember" id="rememberWrap">
+        <input type="checkbox" id="rememberMe">
+        <span>Ghi nhớ đăng nhập</span>
+      </label>
+      
+      <div class="auth-error" id="authError"></div>
+      
+      <button type="submit" class="auth-submit" id="authSubmit">
+        <span id="authSubmitText">Đăng nhập</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
-      <button class="iconbtn" id="btnHelp" aria-label="Chú thích">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </form>
+    
+    <div class="auth-switch">
+      <span id="switchText">Chưa có tài khoản?</span>
+      <button type="button" id="btnSwitchMode">Đăng ký</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none">
+  
+  <header class="hdr" id="mainHeader">
+    <div class="hdr-wrap">
+      <div class="segmented-control">
+        <button class="seg-btn" id="prevMonth" aria-label="Tháng trước">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="seg-label" id="monthLabel">Tháng —<span class="caret">▾</span></button>
+        <button class="seg-btn" id="nextMonth" aria-label="Tháng sau">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      
+      <div class="hdr-actions" id="hdrActions">
+        <button class="iconbtn" id="btnHelp" aria-label="Chú thích">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+        <button class="avatar-btn" id="avatarBtn" aria-label="Tài khoản">
+          <span class="avatar-initial" id="avatarInitial">?</span>
+          <img class="avatar-img" id="avatarImg" alt="">
+        </button>
+      </div>
+    </div>
+
+    <div class="dropdown" id="dropdown">
+      <div class="dd-user">
+        <div class="dd-avatar" id="ddAvatar">
+          <span class="avatar-initial" id="ddInitial">?</span>
+          <img class="avatar-img" id="ddImg" alt="">
+        </div>
+        <div class="dd-info">
+          <div class="dd-name" id="ddName">—</div>
+          <div class="dd-role" id="ddRole">—</div>
+        </div>
+      </div>
+      <button type="button" class="dd-item" data-action="profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Hồ sơ cá nhân
+      </button>
+      <button type="button" class="dd-item" data-action="settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Cài đặt
+      </button>
+      <button type="button" class="dd-item" data-action="admin" id="ddAdmin" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Quản lý người dùng
+      </button>
+      <button type="button" class="dd-item" data-action="theme" id="ddTheme">
+        <span id="themeIcon" style="display:flex;align-items:center;"></span>
+        <span id="themeText">Giao diện tối</span>
+      </button>
+      <button type="button" class="dd-item danger" data-action="logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Đăng xuất
       </button>
     </div>
   </header>
@@ -290,6 +141,14 @@ body{
     <div class="stat s-truc"><span class="lbl">Trực</span><strong id="stTruc">0</strong></div>
     <div class="stat s-ct"><span class="lbl">CT</span><strong id="stCt">0</strong></div>
     <div class="stat s-rank" id="statRank"><span class="lbl">Loại</span><strong id="stRank">–</strong></div>
+    
+    <div class="target-bar-wrap">
+      <div class="target-info">
+        <span>Tiến độ công lương</span>
+        <span><b id="stActual2">0</b> / <span id="stCap">24</span></span>
+      </div>
+      <div class="target-bar"><div class="target-fill" id="targetFill"></div></div>
+    </div>
   </section>
 
   <section class="card">
@@ -310,11 +169,8 @@ body{
   </section>
 </div>
 
-<div class="bottombar">
-  <div class="bb-left">
-    <span>Thực lĩnh</span>
-    <strong id="bbTake">0 đ</strong>
-  </div>
+<div class="bottombar" id="bottombar" style="display:none">
+  <div class="bb-left"><span>Thực lĩnh</span><strong id="bbTake">0 đ</strong></div>
   <button class="btn primary" id="bbDetail">Chi tiết</button>
 </div>
 
@@ -323,777 +179,57 @@ body{
   <div class="sheet-handle"></div>
   <header class="sh-hd">
     <div class="sh-date" id="sheetTitle"></div>
-    <button class="sh-x" id="sheetClose" aria-label="Đóng">✕</button>
+    <button class="sh-x" id="sheetClose" aria-label="Đóng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </header>
   <div class="sh-body" id="sheetBody"></div>
   <footer class="sh-ft" id="sheetActions"></footer>
 </div>
 
+<!-- ADD MODAL -->
+<div class="modal-backdrop" id="addModalBackdrop"></div>
+<div class="modal" id="addModal">
+  <div class="modal-hd">
+    <div class="modal-title" id="addModalTitle">Thêm khoản</div>
+    <button class="modal-close" id="addModalClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="field" style="margin-top:0;">
+      <label>Tên mục</label>
+      <input type="text" id="newItemName" placeholder="VD: Tiền ăn ca">
+    </div>
+    <div class="field">
+      <label>Số tiền (đ)</label>
+      <input type="number" id="newItemValue" placeholder="0">
+    </div>
+    <div class="field" id="newItemTypeWrap">
+      <label>Kiểu tính</label>
+      <select id="newItemType" style="height:46px; border-radius:12px; border:1px solid var(--border); padding:0 14px; background:var(--bg); color:var(--text); font:inherit;">
+        <option value="fixed">Cố định (Cộng thẳng)</option>
+        <option value="calc">Tính theo công (chia công chuẩn)</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn ghost" id="addModalCancel" style="flex:1;">Hủy</button>
+    <button class="btn primary" id="addModalSave" style="flex:1;">Lưu</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-
-<script>
-(function () {
-  'use strict';
-
-  const LS_KEY = 'bangcong_v11';
-  const WD = ['CN','T2','T3','T4','T5','T6','T7'];
-  const RATES = { TH:150000, TCN:200000, HNT:250000, HNN:280000, YBT:130000, YBN:150000 };
-
-  const MAIN_VALUE = {
-    'x': 1, 'x/2': 0.5, 'CT': 1, 'CT/2': 0.5,
-    'L': 0, 'P': 0, 'O': 0
-  };
-
-  const INFO = {
-    'x':    { code:'x',   label:'Đi làm',        sub:'1 công' },
-    'x/2':  { code:'½',   label:'Nửa ngày',      sub:'0,5 công' },
-    'CT':   { code:'CT',  label:'Công tác',      sub:'1 công' },
-    'CT/2': { code:'CT½', label:'CT nửa ngày',   sub:'0,5 công' },
-    'L':    { code:'L',   label:'Nghỉ lễ',       sub:'có lương' },
-    'P':    { code:'P',   label:'Nghỉ phép',     sub:'—' },
-    'O':    { code:'O',   label:'Không phép',    sub:'không lương' },
-    'TH':   { code:'TH',  label:'Trực thường',   sub:'150.000 đ' },
-    'TCN':  { code:'TCN', label:'Trực CN',       sub:'200.000 đ' },
-    'HNT':  { code:'HNT', label:'Hà Nội · giờ',  sub:'250.000 đ' },
-    'HNN':  { code:'HNN', label:'Hà Nội · ngoài',sub:'280.000 đ' },
-    'YBT':  { code:'YBT', label:'Yên Bái · giờ', sub:'130.000 đ' },
-    'YBN':  { code:'YBN', label:'Yên Bái · ngoài',sub:'150.000 đ' }
-  };
-
-  const COUNT_ORDER = ['x','x/2','CT','CT/2','L','P','O','TH','TCN','HNT','HNN','YBT','YBN'];
-
-  const now = new Date();
-  const state = {
-    month: now.getMonth() + 1,
-    year: now.getFullYear(),
-    standard: 26,
-    base: 6000000,
-    cash: 2200000,
-    allowance: 500000,
-    raiseMax: 480000,
-    raiseStandard: 24,
-    countLeave: false,
-    ded: {
-      bhxh: 480000,
-      bhyt: 90000,
-      bhtn: 60000,
-      quy: 100000,
-      cd: 40000,
-      quyDieuDuong: 30000
-    },
-    days: {}
-  };
-
-  let activeDay = null;
-  let currentGroups = [];
-  let sheetMode = null;
-  let pickYear = state.year;
-
-  const $ = s => document.querySelector(s);
-  const sheet = $('#sheet');
-  const backdrop = $('#backdrop');
-  const sheetTitle = $('#sheetTitle');
-  const sheetBody = $('#sheetBody');
-  const sheetActions = $('#sheetActions');
-
-  const nf = new Intl.NumberFormat('vi-VN');
-  const dim = (y, m) => new Date(y, m, 0).getDate();
-  const dk = (y, m, d) => y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-  const todayKey = () => {
-    const t = new Date();
-    return dk(t.getFullYear(), t.getMonth()+1, t.getDate());
-  };
-  const fmtInt = n => nf.format(Math.round(n || 0));
-  const fmtMoney = n => fmtInt(n) + ' đ';
-  const fmtQty = n => nf.format(Math.round((n || 0) * 10) / 10);
-  const tapFeedback = () => { if (navigator.vibrate) navigator.vibrate(8); };
-
-  function save() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
-  }
-  function load() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-      if (!raw) {
-        // Lần đầu: tính công chuẩn theo lịch hiện tại
-        state.standard = calcAutoStandard(state.year, state.month);
-        return;
-      }
-      Object.keys(state).forEach(k => {
-        if (k === 'ded') Object.assign(state.ded, raw.ded || {});
-        else if (raw[k] !== undefined) state[k] = raw[k];
-      });
-    } catch (e) {}
-  }
-
-  /* Công chuẩn tự động: T2–T6 = 1 công, T7 = 0.5 công, CN = 0 */
-  function calcAutoStandard(y, m) {
-    const n = dim(y, m);
-    let cnt = 0;
-    for (let d = 1; d <= n; d++) {
-      const wd = new Date(y, m-1, d).getDay();
-      if (wd === 0) continue;      // CN nghỉ
-      if (wd === 6) cnt += 0.5;    // T7 làm sáng
-      else cnt += 1;
-    }
-    return Math.round(cnt * 10) / 10;
-  }
-
-  /* ================= LOẠI NGÀY ================= */
-  function getDayType(k) {
-    const p = k.split('-').map(Number);
-    const wd = new Date(p[0], p[1]-1, p[2]).getDay();
-    if (wd === 0) return 'sunday';
-    if (wd === 6) return 'saturday';
-    return 'weekday';
-  }
-
-  function getGroupsForDay(dayType) {
-    const ctGroup = {
-      key:'ct', label:'Đi công tác', hint:'không bắt buộc',
-      codes:['HNT','HNN','YBT','YBN']
-    };
-    if (dayType === 'sunday') {
-      return [
-        { key:'truc', label:'Trực chủ nhật', hint:'', codes:['TCN'] },
-        ctGroup
-      ];
-    }
-    if (dayType === 'saturday') {
-      return [
-        {
-          key:'main', label:'Công / nghỉ',
-          hint:'tối đa ½ ngày',
-          codes:['x/2','CT/2','L','P','O']
-        },
-        { key:'truc', label:'Trực thường', hint:'không bắt buộc', codes:['TH'] },
-        ctGroup
-      ];
-    }
-    return [
-      {
-        key:'main', label:'Công / nghỉ', hint:'chọn 1',
-        codes:['x','x/2','CT','CT/2','L','P','O']
-      },
-      { key:'truc', label:'Trực thường', hint:'không bắt buộc', codes:['TH'] },
-      ctGroup
-    ];
-  }
-
-  function normalizeSaturdays() {
-    const n = dim(state.year, state.month);
-    let changed = false;
-    for (let d = 1; d <= n; d++) {
-      const wd = new Date(state.year, state.month-1, d).getDay();
-      if (wd !== 6) continue;
-      const k = dk(state.year, state.month, d);
-      const e = state.days[k];
-      if (!e) continue;
-      if (e.main === 'x')   { e.main = 'x/2';  changed = true; }
-      else if (e.main === 'CT') { e.main = 'CT/2'; changed = true; }
-    }
-    if (changed) save();
-  }
-
-  /* ================= TÍNH TOÁN ================= */
-  function compute() {
-    const n = dim(state.year, state.month);
-    const c = { 'x':0,'x/2':0,'CT':0,'CT/2':0,'L':0,'P':0,'O':0,
-                'TH':0,'TCN':0,'HNT':0,'HNN':0,'YBT':0,'YBN':0 };
-
-    let work = 0;
-
-    for (let d = 1; d <= n; d++) {
-      const k = dk(state.year, state.month, d);
-      const e = state.days[k];
-      if (!e) continue;
-
-      const wd = new Date(state.year, state.month-1, d).getDay();
-      const isSat = (wd === 6);
-
-      if (e.main && c[e.main] !== undefined) c[e.main]++;
-      if (e.truc && c[e.truc] !== undefined) c[e.truc]++;
-      if (e.ct && c[e.ct] !== undefined) c[e.ct]++;
-
-      let dayWork = MAIN_VALUE[e.main] || 0;
-      if (isSat && dayWork > 0.5) dayWork = 0.5;
-      work += dayWork;
-    }
-
-    const actual = work + (state.countLeave ? c['L'] + c['P'] : 0);
-    const std = state.standard > 0 ? state.standard : 1;
-    const salary = state.base / std * actual;
-    const cashM = state.cash / std * actual;
-    const allowM = state.allowance / std * actual;
-
-    // Lương tăng: tỷ lệ theo công, tối đa bằng raiseMax
-    const raiseStd = state.raiseStandard > 0 ? state.raiseStandard : 1;
-    const raisePay = Math.min(state.raiseMax, state.raiseMax / raiseStd * actual);
-
-    const trucM = c['TH'] * RATES.TH + c['TCN'] * RATES.TCN;
-    const ctM = c['HNT'] * RATES.HNT + c['HNN'] * RATES.HNN + c['YBT'] * RATES.YBT + c['YBN'] * RATES.YBN;
-
-    const total = salary + cashM + allowM + raisePay + trucM + ctM;
-    const ded = (state.ded.bhxh||0) + (state.ded.bhyt||0) + (state.ded.bhtn||0) +
-                (state.ded.quy||0) + (state.ded.cd||0) + (state.ded.quyDieuDuong||0);
-    const take = total - ded;
-
-    const missing = state.standard - work;
-    let rank = 'C';
-    if (missing < 2) rank = 'A';
-    else if (missing >= 18) rank = 'TẠCH';
-    else if (missing < 7) rank = 'B';
-
-    return { c, work, actual, salary, cashM, allowM, raisePay, trucM, ctM, total, ded, take, missing, rank };
-  }
-
-  /* ================= Ô NGÀY ================= */
-  function mainClass(code) {
-    if (!code) return '';
-    if (code === 'L') return 'k-l';
-    if (code === 'P') return 'k-p';
-    if (code === 'O') return 'k-o';
-    if (code === 'CT' || code === 'CT/2') return 'k-ct';
-    return 'k-x';
-  }
-
-  function cellHtml(k, d, wd) {
-    const e = state.days[k] || {};
-    let cls = 'cell';
-    if (wd === 0) cls += ' sun';
-    if (k === todayKey()) cls += ' today';
-    if (e.main || e.truc || e.ct) cls += ' has';
-
-    let inner = '<span class="d">' + d + '</span>';
-    if (e.main) inner += '<span class="m ' + mainClass(e.main) + '">' + INFO[e.main].code + '</span>';
-    const tags = [];
-    if (e.truc) tags.push('<i class="tg truc">' + e.truc + '</i>');
-    if (e.ct)   tags.push('<i class="tg ct">'   + e.ct   + '</i>');
-    if (tags.length) inner += '<span class="tags">' + tags.join('') + '</span>';
-
-    return '<button type="button" class="' + cls + '" data-key="' + k + '">' + inner + '</button>';
-  }
-
-  function renderCalendar() {
-    const y = state.year, m = state.month;
-    const n = dim(y, m);
-    const offset = (new Date(y, m-1, 1).getDay() + 6) % 7;
-    let html = '';
-    for (let i = 0; i < offset; i++) html += '<div class="cell empty"></div>';
-    for (let d = 1; d <= n; d++) {
-      html += cellHtml(dk(y, m, d), d, new Date(y, m-1, d).getDay());
-    }
-    $('#calGrid').innerHTML = html;
-  }
-
-  function updateCell(k) {
-    const el = document.querySelector('[data-key="' + k + '"]');
-    if (!el) return;
-    const p = k.split('-').map(Number);
-    const tmp = document.createElement('div');
-    tmp.innerHTML = cellHtml(k, p[2], new Date(p[0], p[1]-1, p[2]).getDay());
-    el.replaceWith(tmp.firstElementChild);
-  }
-
-  /* ================= RENDER ================= */
-  function renderStats(r) {
-    $('#stWork').textContent = fmtQty(r.work);
-    $('#stActual').textContent = fmtQty(r.actual);
-    $('#stTruc').textContent = r.c['TH'] + r.c['TCN'];
-    $('#stCt').textContent = r.c['HNT'] + r.c['HNN'] + r.c['YBT'] + r.c['YBN'];
-    $('#stRank').textContent = r.rank;
-    const sr = $('#statRank');
-    sr.classList.remove('r-A','r-B','r-C','r-T');
-    if (r.rank === 'A') sr.classList.add('r-A');
-    else if (r.rank === 'B') sr.classList.add('r-B');
-    else if (r.rank === 'C') sr.classList.add('r-C');
-    else sr.classList.add('r-T');
-    $('#bbTake').textContent = fmtMoney(r.take);
-  }
-
-  function buildSalaryHtml(r) {
-    const rows = [];
-    const std = state.standard > 0 ? state.standard : 1;
-    const add = (a, b, c, cls) => rows.push({ a, b, c, cls });
-
-    add('Lương theo công', fmtInt(state.base) + ' ÷ ' + fmtQty(std) + ' × ' + fmtQty(r.actual), fmtInt(r.salary));
-    add('Tiền mặt', fmtInt(state.cash) + ' ÷ ' + fmtQty(std) + ' × ' + fmtQty(r.actual), fmtInt(r.cashM));
-    add('Trợ cấp', fmtInt(state.allowance) + ' ÷ ' + fmtQty(std) + ' × ' + fmtQty(r.actual), fmtInt(r.allowM));
-
-    if (state.raiseMax > 0) {
-      const rs = state.raiseStandard > 0 ? state.raiseStandard : 1;
-      add('Lương tăng',
-        fmtInt(state.raiseMax) + ' ÷ ' + fmtQty(rs) + ' × ' + fmtQty(r.actual) +
-        (r.actual >= rs ? ' (tối đa)' : ''),
-        fmtInt(r.raisePay));
-    }
-
-    if (r.c['TH'])  add('Trực thường × ' + r.c['TH'],   '150.000 đ/ngày', fmtInt(r.c['TH'] * RATES.TH));
-    if (r.c['TCN']) add('Trực chủ nhật × ' + r.c['TCN'], '200.000 đ/ngày', fmtInt(r.c['TCN'] * RATES.TCN));
-    if (r.c['HNT']) add('Hà Nội trong giờ × ' + r.c['HNT'],  '250.000 đ/lần', fmtInt(r.c['HNT'] * RATES.HNT));
-    if (r.c['HNN']) add('Hà Nội ngoài giờ × ' + r.c['HNN'],  '280.000 đ/lần', fmtInt(r.c['HNN'] * RATES.HNN));
-    if (r.c['YBT']) add('Yên Bái trong giờ × ' + r.c['YBT'], '130.000 đ/lần', fmtInt(r.c['YBT'] * RATES.YBT));
-    if (r.c['YBN']) add('Yên Bái ngoài giờ × ' + r.c['YBN'], '150.000 đ/lần', fmtInt(r.c['YBN'] * RATES.YBN));
-    add('Tổng thu nhập', '', fmtInt(r.total), 'total');
-
-    if (r.ded > 0) {
-      if (state.ded.bhxh)         add('BHXH', 'khấu trừ', '−' + fmtInt(state.ded.bhxh));
-      if (state.ded.bhyt)         add('BHYT', 'khấu trừ', '−' + fmtInt(state.ded.bhyt));
-      if (state.ded.bhtn)         add('BHTN', 'khấu trừ', '−' + fmtInt(state.ded.bhtn));
-      if (state.ded.quy)          add('Quỹ khoa / Hội ĐD', 'khấu trừ', '−' + fmtInt(state.ded.quy));
-      if (state.ded.cd)           add('Công đoàn', 'khấu trừ', '−' + fmtInt(state.ded.cd));
-      if (state.ded.quyDieuDuong) add('Quỹ Điều dưỡng', 'khấu trừ', '−' + fmtInt(state.ded.quyDieuDuong));
-      add('Tổng khấu trừ', '', '−' + fmtInt(r.ded), 'total');
-    }
-
-    add('THỰC LĨNH', '', fmtInt(r.take), 'take');
-
-    let html = '<table class="tbl"><thead><tr><th>Khoản</th><th>Cách tính</th><th>Số tiền (đ)</th></tr></thead><tbody>';
-    rows.forEach(row => {
-      html += '<tr' + (row.cls ? ' class="' + row.cls + '"' : '') + '>';
-      html += '<td>' + row.a + '</td><td>' + row.b + '</td><td>' + row.c + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    return html;
-  }
-
-  function refreshUI() {
-    save();
-    const r = compute();
-    renderStats(r);
-  }
-
-  function updateAll() {
-    normalizeSaturdays();
-    save();
-    renderCalendar();
-    const r = compute();
-    renderStats(r);
-  }
-
-  /* ================= TOAST ================= */
-  let toastTimer = 0;
-  function showToast(msg) {
-    const t = $('#toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
-  }
-
-  /* ================= SHEET CHUNG ================= */
-  function showSheet() {
-    sheet.classList.add('open');
-    backdrop.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function hideSheet() {
-    sheet.classList.remove('open');
-    backdrop.classList.remove('open');
-    document.body.style.overflow = '';
-    activeDay = null;
-    sheetMode = null;
-  }
-  backdrop.addEventListener('click', hideSheet);
-  $('#sheetClose').addEventListener('click', hideSheet);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideSheet(); });
-
-  function setSheet(title, subtitle, bodyHtml, actionsHtml) {
-    sheetTitle.innerHTML = title + (subtitle ? '<small>' + subtitle + '</small>' : '');
-    sheetBody.innerHTML = bodyHtml;
-    sheetActions.innerHTML = actionsHtml;
-    showSheet();
-    sheetBody.scrollTop = 0;
-  }
-
-  /* ================= SHEET: NGÀY ================= */
-  function daySheetBody() {
-    const e = state.days[activeDay] || {};
-    let html = '';
-    currentGroups.forEach(g => {
-      const isOne = g.codes.length === 1;
-      html += '<div class="pgrp">' +
-                '<div class="pgrp-lbl">' +
-                  '<span class="name">' + g.label + '</span>' +
-                  (g.hint ? '<span class="hint">' + g.hint + '</span>' : '') +
-                '</div>' +
-                '<div class="popts' + (isOne ? ' one' : '') + '">';
-      g.codes.forEach(code => {
-        const info = INFO[code];
-        const on = e[g.key] === code ? ' on' : '';
-        html += '<button type="button" class="pop-opt' + on + ' ' + g.key +
-                '" data-g="' + g.key + '" data-c="' + code + '">' +
-                  '<span class="l">' + info.label + '</span>' +
-                  (info.sub ? '<span class="s">' + info.sub + '</span>' : '') +
-                '</button>';
-      });
-      html += '</div></div>';
-    });
-    return html;
-  }
-
-  function hasDayData(k) {
-    const e = state.days[k] || {};
-    return !!(e.main || e.truc || e.ct);
-  }
-
-  function buildDayActions() {
-    const need = activeDay && hasDayData(activeDay);
-    return (need ? '<button type="button" class="btn danger" data-act="clear">Xóa</button>' : '') +
-           '<button type="button" class="btn primary" data-act="done">Đóng</button>';
-  }
-
-  function openDaySheet(k) {
-    activeDay = k;
-    sheetMode = 'day';
-    const dayType = getDayType(k);
-    const p = k.split('-').map(Number);
-    const dt = new Date(p[0], p[1]-1, p[2]);
-
-    if (dayType === 'saturday') {
-      const cur = state.days[k];
-      if (cur) {
-        let changed = false;
-        if (cur.main === 'x')   { cur.main = 'x/2';  changed = true; }
-        else if (cur.main === 'CT') { cur.main = 'CT/2'; changed = true; }
-        if (changed) { save(); updateCell(k); }
-      }
-      if (!state.days[k]) {
-        state.days[k] = { main: 'x/2' };
-        save();
-        updateCell(k);
-        const r0 = compute();
-        renderStats(r0);
-      }
-    }
-
-    const typeLabel = dayType === 'sunday' ? 'Chủ nhật'
-                    : (dayType === 'saturday' ? 'Thứ 7 · tối đa ½ ngày' : 'Ngày thường');
-    const title = WD[dt.getDay()] + ', ' + String(p[2]).padStart(2,'0') + '/' +
-                  String(p[1]).padStart(2,'0') + '/' + p[0];
-
-    currentGroups = getGroupsForDay(dayType);
-    setSheet(title, typeLabel, daySheetBody(), buildDayActions());
-  }
-
-  /* ================= SHEET: THÁNG ================= */
-  function openMonthSheet() {
-    activeDay = null;
-    sheetMode = 'month';
-    pickYear = state.year;
-    setSheet('Chọn tháng', 'Tháng / năm chấm công', buildMonthBody(),
-      '<button type="button" class="btn primary" data-act="done">Đóng</button>');
-  }
-
-  function buildMonthBody() {
-    let months = '';
-    for (let i = 1; i <= 12; i++) {
-      const on = (state.year === pickYear && state.month === i) ? ' on' : '';
-      months += '<button type="button" class="mbtn' + on + '" data-m="' + i + '">T' + i + '</button>';
-    }
-    return '<div class="yearrow">' +
-        '<button type="button" class="navbtn" data-yshift="-1">‹</button>' +
-        '<strong>' + pickYear + '</strong>' +
-        '<button type="button" class="navbtn" data-yshift="1">›</button>' +
-      '</div><div class="months">' + months + '</div>';
-  }
-
-  /* ================= SHEET: CÀI ĐẶT ================= */
-  function openSettings() {
-    activeDay = null;
-    sheetMode = 'settings';
-    setSheet('Cài đặt', 'Lương & khấu trừ tháng', buildSettingsBody(),
-      '<button type="button" class="btn primary" data-act="done">Xong</button>');
-    populateSettingsInputs();
-    updateSettingsPreview();
-  }
-
-  function buildSettingsBody() {
-    return '' +
-      '<div class="pgrp">' +
-        '<div class="pgrp-lbl"><span class="name">Lương &amp; công chuẩn</span></div>' +
-        '<div class="grid2">' +
-          '<div class="field">' +
-            '<label for="s-standard">Công chuẩn / tháng</label>' +
-            '<input id="s-standard" data-field="standard" type="number" step="0.5" min="1" max="31" inputmode="decimal">' +
-            '<button type="button" class="linkbtn" data-act="autostd">Tự tính (trừ CN, T7 = ½)</button>' +
-          '</div>' +
-          '<div class="field"><label for="s-base">Lương cơ bản (đ)</label>' +
-            '<input id="s-base" data-field="base" type="number" step="100000" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-cash">Tiền mặt (đ/tháng)</label>' +
-            '<input id="s-cash" data-field="cash" type="number" step="100000" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-allow">Trợ cấp (đ/tháng)</label>' +
-            '<input id="s-allow" data-field="allowance" type="number" step="100000" inputmode="numeric"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="pgrp">' +
-        '<div class="pgrp-lbl"><span class="name">Lương tăng</span></div>' +
-        '<div class="grid2">' +
-          '<div class="field"><label for="s-raiseMax">Mức tối đa (đ)</label>' +
-            '<input id="s-raiseMax" data-field="raiseMax" type="number" step="10000" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-raiseStd">Công đạt tối đa</label>' +
-            '<input id="s-raiseStd" data-field="raiseStandard" type="number" step="0.5" min="1" inputmode="decimal"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="pgrp">' +
-        '<label class="switch"><input type="checkbox" data-field="countLeave">' +
-          'Cộng Lễ (L) &amp; Phép (P) vào công tính lương</label>' +
-      '</div>' +
-      '<div class="pgrp">' +
-        '<div class="pgrp-lbl"><span class="name">Khấu trừ hàng tháng (đ)</span></div>' +
-        '<div class="grid2">' +
-          '<div class="field"><label for="s-bhxh">BHXH</label><input id="s-bhxh" data-field="bhxh" type="number" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-bhyt">BHYT</label><input id="s-bhyt" data-field="bhyt" type="number" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-bhtn">BHTN</label><input id="s-bhtn" data-field="bhtn" type="number" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-quy">Quỹ khoa / Hội ĐD</label><input id="s-quy" data-field="quy" type="number" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-cd">Công đoàn</label><input id="s-cd" data-field="cd" type="number" inputmode="numeric"></div>' +
-          '<div class="field"><label for="s-qdd">Quỹ Điều dưỡng</label><input id="s-qdd" data-field="quyDieuDuong" type="number" inputmode="numeric"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="set-preview"><span>Thực lĩnh dự kiến</span><strong id="setPreview">0 đ</strong></div>';
-  }
-
-  function populateSettingsInputs() {
-    const set = (field, val) => {
-      const el = sheetBody.querySelector('[data-field="' + field + '"]');
-      if (el) el.value = val;
-    };
-    set('standard', state.standard);
-    set('base', state.base);
-    set('cash', state.cash);
-    set('allowance', state.allowance);
-    set('raiseMax', state.raiseMax);
-    set('raiseStandard', state.raiseStandard);
-    set('bhxh', state.ded.bhxh || '');
-    set('bhyt', state.ded.bhyt || '');
-    set('bhtn', state.ded.bhtn || '');
-    set('quy', state.ded.quy || '');
-    set('cd', state.ded.cd || '');
-    set('quyDieuDuong', state.ded.quyDieuDuong || '');
-    const cb = sheetBody.querySelector('[data-field="countLeave"]');
-    if (cb) cb.checked = !!state.countLeave;
-  }
-
-  function updateSettingsPreview() {
-    const el = $('#setPreview');
-    if (!el) return;
-    const r = compute();
-    el.textContent = fmtMoney(r.take);
-  }
-
-  /* ================= SHEET: CHÚ THÍCH ================= */
-  function openHelp() {
-    activeDay = null;
-    sheetMode = 'help';
-    setSheet('Chú thích', 'Mã chấm công', buildHelpBody(),
-      '<button type="button" class="btn primary" data-act="done">Đóng</button>');
-  }
-
-  function buildHelpBody() {
-    const groups = [
-      { title: 'Công / nghỉ', items: [
-        ['x', 'Đi làm (1 công)'],
-        ['½', 'Làm nửa ngày (0,5)'],
-        ['CT', 'Công tác (1 công)'],
-        ['CT½', 'Công tác nửa ngày (0,5)'],
-        ['L', 'Nghỉ lễ'],
-        ['P', 'Nghỉ phép'],
-        ['O', 'Không phép / không lương']
-      ]},
-      { title: 'Trực', items: [
-        ['TH', 'Trực thường (150.000 đ)'],
-        ['TCN', 'Trực chủ nhật (200.000 đ)']
-      ]},
-      { title: 'Đi công tác', items: [
-        ['HNT', 'Hà Nội · trong giờ (250.000 đ)'],
-        ['HNN', 'Hà Nội · ngoài giờ (280.000 đ)'],
-        ['YBT', 'Yên Bái · trong giờ (130.000 đ)'],
-        ['YBN', 'Yên Bái · ngoài giờ (150.000 đ)']
-      ]}
-    ];
-    let html = '';
-    groups.forEach(g => {
-      html += '<div class="help-grp"><h3>' + g.title + '</h3><div class="help-list">';
-      g.items.forEach(([code, desc]) => {
-        html += '<div class="help-item">' +
-                  '<span class="help-code">' + code + '</span>' +
-                  '<span class="help-desc">' + desc + '</span>' +
-                '</div>';
-      });
-      html += '</div></div>';
-    });
-    html += '<div class="help-note">' +
-      '<b>T2–T6:</b> chỉ có Trực thường (TH), không có Trực chủ nhật.<br>' +
-      '<b>Thứ 7:</b> chỉ tính tối đa ½ ngày công (chỉ làm sáng). Có thể thêm TH và/hoặc đi công tác.<br>' +
-      '<b>Chủ nhật:</b> không tính công, chỉ có TCN và đi công tác.<br>' +
-      '<b>Công chuẩn:</b> tự tính = số ngày T2–T6 + 0,5 × số ngày T7 (bỏ CN).<br>' +
-      '<b>Lương tăng:</b> tỷ lệ theo công, đạt mức tối đa khi đủ số công quy định.<br>' +
-      'Mỗi ngày tối đa 3 mã ở 3 nhóm. Chạm lại mã đang chọn để bỏ.' +
-    '</div>';
-    return html;
-  }
-
-  /* ================= SHEET: LƯƠNG ================= */
-  function openSalary() {
-    activeDay = null;
-    sheetMode = 'salary';
-    const r = compute();
-    setSheet('Bảng lương', 'Tháng ' + state.month + '/' + state.year, buildSalaryHtml(r),
-      '<button type="button" class="btn primary" data-act="done">Đóng</button>');
-  }
-
-  /* ================= SỰ KIỆN TRONG SHEET ================= */
-  sheetBody.addEventListener('click', e => {
-    if (sheetMode === 'settings') {
-      const auto = e.target.closest('[data-act="autostd"]');
-      if (auto) {
-        const cnt = calcAutoStandard(state.year, state.month);
-        state.standard = cnt;
-        const inp = sheetBody.querySelector('[data-field="standard"]');
-        if (inp) inp.value = cnt;
-        refreshUI();
-        updateSettingsPreview();
-        showToast('Công chuẩn đã đặt: ' + fmtQty(cnt));
-        return;
-      }
-      return;
-    }
-
-    if (sheetMode === 'month') {
-      const yb = e.target.closest('[data-yshift]');
-      if (yb) {
-        pickYear += Number(yb.dataset.yshift);
-        sheetBody.innerHTML = buildMonthBody();
-        return;
-      }
-      const mb = e.target.closest('[data-m]');
-      if (mb) {
-        state.year = pickYear;
-        state.month = Number(mb.dataset.m);
-        hideSheet();
-        updateMonthLabel();
-        updateAll();
-      }
-      return;
-    }
-
-    if (sheetMode === 'day') {
-      const chip = e.target.closest('.pop-opt');
-      if (!chip || !activeDay) return;
-      const g = chip.dataset.g, c = chip.dataset.c;
-      const cur = state.days[activeDay] || (state.days[activeDay] = {});
-      const wasOn = cur[g] === c;
-      if (wasOn) delete cur[g]; else cur[g] = c;
-
-      chip.parentElement.querySelectorAll('.pop-opt').forEach(el => el.classList.remove('on'));
-      if (!wasOn) chip.classList.add('on');
-
-      sheetActions.innerHTML = buildDayActions();
-      updateCell(activeDay);
-      refreshUI();
-      tapFeedback();
-    }
-  });
-
-  sheetBody.addEventListener('input', e => {
-    if (sheetMode !== 'settings') return;
-    const field = e.target.dataset.field;
-    if (!field) return;
-    if (field === 'countLeave') {
-      state.countLeave = e.target.checked;
-    } else if (['bhxh','bhyt','bhtn','quy','cd','quyDieuDuong'].includes(field)) {
-      state.ded[field] = parseFloat(e.target.value) || 0;
-    } else if (field === 'standard') {
-      state.standard = Math.max(0.5, parseFloat(e.target.value) || 0);
-    } else if (field === 'raiseStandard') {
-      state.raiseStandard = Math.max(0.5, parseFloat(e.target.value) || 0);
-    } else {
-      state[field] = parseFloat(e.target.value) || 0;
-    }
-    refreshUI();
-    updateSettingsPreview();
-  });
-
-  sheetActions.addEventListener('click', e => {
-    const b = e.target.closest('[data-act]');
-    if (!b) return;
-    if (b.dataset.act === 'done') { hideSheet(); return; }
-    if (b.dataset.act === 'clear' && sheetMode === 'day' && activeDay) {
-      state.days[activeDay] = {};
-      sheetBody.querySelectorAll('.pop-opt.on').forEach(el => el.classList.remove('on'));
-      sheetActions.innerHTML = buildDayActions();
-      updateCell(activeDay);
-      refreshUI();
-      showToast('Đã xóa ngày');
-    }
-  });
-
-  /* ================= CHẠM NGÀY ================= */
-  $('#calGrid').addEventListener('click', e => {
-    const cell = e.target.closest('.cell[data-key]');
-    if (!cell) return;
-    openDaySheet(cell.dataset.key);
-    tapFeedback();
-  });
-
-  /* ================= THÁNG ================= */
-  function updateMonthLabel() {
-    $('#monthLabel').innerHTML = 'Tháng ' + state.month + '/' + state.year + '<span class="caret">▾</span>';
-  }
-  function changeMonth(delta) {
-    hideSheet();
-    let m = state.month + delta, y = state.year;
-    if (m < 1) { m = 12; y--; }
-    if (m > 12) { m = 1; y++; }
-    state.month = m; state.year = y;
-    updateMonthLabel();
-    updateAll();
-  }
-  $('#prevMonth').addEventListener('click', () => changeMonth(-1));
-  $('#nextMonth').addEventListener('click', () => changeMonth(1));
-  $('#monthLabel').addEventListener('click', openMonthSheet);
-
-  /* ================= ICON HEADER ================= */
-  $('#btnSettings').addEventListener('click', openSettings);
-  $('#btnHelp').addEventListener('click', openHelp);
-
-  /* ================= ĐIỀN NHANH ================= */
-  function fillWeekdays(lastDay) {
-    const n = dim(state.year, state.month);
-    let count = 0;
-    for (let d = 1; d <= n; d++) {
-      const wd = new Date(state.year, state.month-1, d).getDay();
-      if (wd >= 1 && wd <= lastDay) {
-        const k = dk(state.year, state.month, d);
-        const e = state.days[k];
-        if (!e || !e.main) {
-          state.days[k] = state.days[k] || {};
-          state.days[k].main = (wd === 6) ? 'x/2' : 'x';
-          count++;
-        }
-      }
-    }
-    updateAll();
-    showToast(count > 0 ? 'Đã điền x cho ' + count + ' ngày trống' : 'Không có ngày trống để điền');
-  }
-  $('#btnFillX').addEventListener('click', () => fillWeekdays(5));
-  $('#btnFillT7').addEventListener('click', () => fillWeekdays(6));
-
-  $('#btnClear').addEventListener('click', () => {
-    if (!confirm('Xóa toàn bộ chấm công của tháng ' + state.month + '/' + state.year + '?')) return;
-    const n = dim(state.year, state.month);
-    for (let d = 1; d <= n; d++) delete state.days[dk(state.year, state.month, d)];
-    updateAll();
-    showToast('Đã xóa tháng ' + state.month);
-  });
-
-  $('#bbDetail').addEventListener('click', openSalary);
-
-  /* ================= KHỞI TẠO ================= */
-  load();
-  updateMonthLabel();
-  updateAll();
-})();
-</script>
+<input type="file" id="avatarInput" accept="image/*" style="display:none">
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<!-- Custom Scripts -->
+<script src="firebase.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
