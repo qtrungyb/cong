@@ -1005,3 +1005,13 @@ body::before{
   background: #f87171;
   box-shadow: 0 0 0 1.5px var(--card-solid);
 }
+/* ===== AUTO-STANDARD: readonly field ===== */
+.set-row-input[readonly] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: var(--bg);
+  color: var(--muted);
+}
+[data-theme="dark"] .set-row-input[readonly] {
+  background: rgba(15,23,42,0.6);
+}
