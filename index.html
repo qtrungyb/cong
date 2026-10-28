@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
-<title>Bảng tính công</title>
+<title>Bảng công &amp; lương</title>
 
-<!-- Áp dụng theme + accent trước khi CSS render (chống flash) -->
+<!-- Áp dụng theme + accent + bg trước khi CSS render (chống flash) -->
 <script>
 (function(){
   try {
@@ -22,14 +22,14 @@
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bảng công">
 <meta name="mobile-web-app-capable" content="yes">
 
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -162,7 +162,7 @@
         </svg>
         Màu chủ đề
       </button>
-	  <button type="button" class="dd-item" data-action="bg">
+      <button type="button" class="dd-item" data-action="bg">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -264,17 +264,17 @@
 <div class="toast" id="toast"></div>
 <input type="file" id="avatarInput" accept="image/*" style="display:none">
 
-<!-- Firebase SDKs -->
+<!-- Firebase SDKs (URL tuyệt đối — không đổi) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-<!-- Custom Scripts -->
-<script src="firebase.js"></script>
-<script src="auth.js"></script>
-<script src="app.js"></script>
+<!-- Custom Scripts (đã sửa path) -->
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
 
-<!-- NEW: Đăng ký Service Worker (PWA offline + auto-update) -->
+<!-- Đăng ký Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
