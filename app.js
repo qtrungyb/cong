@@ -435,7 +435,48 @@ window.flushNow = flushNow;
 window.detachAllListeners = detachAllListeners;
 window.closeDropdown = closeDropdown;
 window.hideSheet = hideSheet;
+/* ===== PWA INSTALL PROMPT ===== */
+let deferredPrompt = null;
 
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('ddInstall');
+  if (btn) btn.hidden = false;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('ddInstall');
+  if (btn) btn.hidden = true;
+  showToast('Đã cài đặt ứng dụng');
+});
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+}
+
+function handleInstallApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') showToast('Đang cài đặt ứng dụng…');
+      deferredPrompt = null;
+      const btn = document.getElementById('ddInstall');
+      if (btn) btn.hidden = true;
+    });
+  } else if (isIOSDevice() && !isStandaloneMode()) {
+    showToast('Nhấn nút Chia sẻ → Thêm vào MH chính');
+  } else if (isStandaloneMode()) {
+    showToast('Ứng dụng đã được cài đặt');
+  } else {
+    showToast('Trình duyệt không hỗ trợ cài đặt');
+  }
+}
 /* ===== COMPUTE & RENDER ===== */
 function compute() {
   const n = dim(state.year, state.month);
@@ -1010,7 +1051,11 @@ document.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme);
   applyAccent(currentAccent);
   initFirebase();
-
+// Hiện nút "Cài đặt ứng dụng" trên iOS (không có beforeinstallprompt)
+	if (isIOSDevice() && !isStandaloneMode()) {
+	  const installBtn = document.getElementById('ddInstall');
+	  if (installBtn) installBtn.hidden = false;
+	}
   if (firebaseReady) {
     auth.onAuthStateChanged(user => {
       $('#loadingScreen').style.display = 'none';
@@ -1046,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (a === 'theme') applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     else if (a === 'accent') openAccentPicker();
     else if (a === 'help') openHelp();
+	else if (a === 'install') { handleInstallApp(); }
     else if (a === 'logout') { if (typeof logout === 'function') logout(); }
   });
   document.addEventListener('click', e => {

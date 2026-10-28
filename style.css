@@ -145,15 +145,31 @@
 [data-theme="dark"][data-accent="brown"]{ --primary:#a16207; --primary-light:#fbbf24; --primary-dark:#78350f; --primary-soft:rgba(161,98,7,0.18); --primary-glow:rgba(161,98,7,0.45); }
 
 /* ===== BASE ===== */
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+input, textarea, [contenteditable], .set-row-input{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
 html,body{margin:0;padding:0}
-html{background:var(--bg);min-height:100%}
+html{
+  background:var(--bg);
+  min-height:100%;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+}
 
 body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   color:var(--text);font-size:15px;line-height:1.4;
   min-height:100vh;
-  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+  padding-bottom:calc(112px + env(safe-area-inset-bottom));
   -webkit-text-size-adjust:100%;
   overscroll-behavior-y:contain;
   position:relative;
@@ -512,21 +528,73 @@ body::before{
 
 /* ======= BOTTOM BAR ======= */
 .bottombar{
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  margin:0 auto;max-width:600px;
+  position:fixed;
+  left:16px;
+  right:16px;
+  bottom:calc(14px + env(safe-area-inset-bottom));
+  z-index:40;
+  margin:0 auto;
+  max-width:568px;
   background:var(--card-elevated);
   backdrop-filter:var(--glass-blur-strong);
   -webkit-backdrop-filter:var(--glass-blur-strong);
-  border-top:1px solid var(--glass-border);
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  box-shadow:0 -10px 30px -12px rgba(15,23,42,0.18);
+  border:1px solid var(--glass-border);
+  border-radius:24px;
+  padding:10px 10px 10px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  box-shadow:
+    0 16px 40px -12px rgba(15,23,42,0.28),
+    0 6px 16px -6px rgba(15,23,42,0.12),
+    inset 0 1px 0 var(--glass-highlight);
+  transition:transform .35s cubic-bezier(.32,.72,0,1),
+             opacity .25s ease,
+             bottom .35s cubic-bezier(.32,.72,0,1);
 }
-[data-theme="dark"] .bottombar{background:rgba(15,23,42,0.7);box-shadow:0 -10px 30px -12px rgba(0,0,0,0.5);}
+[data-theme="dark"] .bottombar{
+  background:rgba(30,41,59,0.72);
+  box-shadow:
+    0 16px 40px -12px rgba(0,0,0,0.55),
+    0 6px 16px -6px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
 
-.bb-left{display:flex;flex-direction:column;line-height:1.15;min-width:0;}
-.bb-left span{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
-.bb-left strong{font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--primary);overflow:hidden;text-overflow:ellipsis;}
+/* Ẩn bottom bar khi mở sheet hoặc modal để không bị chồng */
+body:has(.sheet.open) .bottombar,
+body:has(.modal.open) .bottombar{
+  transform:translateY(140%);
+  opacity:0;
+  pointer-events:none;
+}
+
+.bb-left{
+  display:flex;
+  flex-direction:column;
+  line-height:1.1;
+  min-width:0;
+  gap:3px;
+}
+.bb-left span{
+  font-size:10px;
+  color:var(--muted);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  opacity:.9;
+}
+.bb-left strong{
+  font-size:21px;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  color:var(--primary);
+  font-weight:800;
+  letter-spacing:-.02em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  transition:color .2s;
+}
 
 .btn{
   border:0;border-radius:14px;padding:12px 20px;
@@ -541,6 +609,15 @@ body::before{
 }
 .btn.ghost{background:var(--recessed);color:var(--muted);}
 .btn.danger{background:rgba(220,38,38,.12);color:var(--danger);}
+.bottombar .btn.primary{
+  padding:11px 18px;
+  font-size:13.5px;
+  border-radius:16px;
+  flex:0 0 auto;
+  box-shadow:
+    0 8px 20px -8px var(--primary-glow),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
 .btn:active{transform:scale(.97);}
 
 /* ======= SHEET ======= */
@@ -915,7 +992,7 @@ body::before{
 
 .toast{
   position:fixed;left:50%;
-  bottom:calc(90px + env(safe-area-inset-bottom));
+  bottom:calc(108px + env(safe-area-inset-bottom));
   z-index:70;transform:translate(-50%,20px);
   background:rgba(15,23,42,0.85);
   backdrop-filter:blur(20px) saturate(180%);
