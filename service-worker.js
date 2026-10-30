@@ -1,6 +1,6 @@
 /* ===== SERVICE WORKER — Offline cache ===== */
 // ⚠️ Khi deploy code mới, đổi CACHE_VERSION để buộc browser cập nhật
-const CACHE_VERSION = 'v1.7';
+const CACHE_VERSION = 'v1.8';
 const CACHE_NAME = 'bangcong-' + CACHE_VERSION;
 
 const PRECACHE = [
