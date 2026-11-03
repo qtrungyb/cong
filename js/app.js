@@ -101,8 +101,8 @@ const state = {
   month: now.getMonth() + 1, year: now.getFullYear(),
   standard: 24.5, capStandard: 24,
   base: 6000000, cash: 2200000, allowance: 500000,
-  raiseMax: 480000, raiseStandard: 24, countLeave: false,
-  autoStandard: true,   // ✅ MỚI
+  raiseMax: 480000, countLeave: false,
+  autoStandard: true,
   ded: { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 },
   customIncome: [], customDeductions: [], days: {},
   sysNames: { ...DEFAULT_SYS_NAMES }
@@ -152,8 +152,8 @@ function resetState() {
   state.standard = autoStd;
   state.capStandard = autoStd;
   state.base = 6000000; state.cash = 2200000; state.allowance = 500000;
-  state.raiseMax = 480000; state.raiseStandard = 24; state.countLeave = false;
-  state.autoStandard = true;   // ✅
+  state.raiseMax = 480000; state.countLeave = false;
+  state.autoStandard = true;
   state.ded = { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 };
   state.customIncome = []; state.customDeductions = []; state.days = {};
   currentProfile = { displayName: '', photoURL: '' };
@@ -170,7 +170,6 @@ function calcAutoStandard(y, m) {
   return Math.round(cnt * 10) / 10;
 }
 
-// ✅ Cập nhật CẢ 2 mốc (giống nút "Tính lại công chuẩn")
 function applyAutoStandard() {
   if (!state.autoStandard) return false;
   const newStd = calcAutoStandard(state.year, state.month);
@@ -218,6 +217,7 @@ function applyBg(bg) {
   document.documentElement.setAttribute('data-bg', bg);
   localStorage.setItem('bg', bg);
 }
+
 /* ===== LOCAL STORAGE ===== */
 const lsSettings = () => LS_BASE + '_' + currentUid + '_settings';
 const lsMonth = () => LS_BASE + '_' + currentUid + '_m_' + mk();
@@ -228,8 +228,8 @@ function saveLocal() {
     const s = {
       standard: state.standard, capStandard: state.capStandard,
       base: state.base, cash: state.cash, allowance: state.allowance,
-      raiseMax: state.raiseMax, raiseStandard: state.raiseStandard,
-      countLeave: state.countLeave, autoStandard: state.autoStandard,   // ✅
+      raiseMax: state.raiseMax,
+      countLeave: state.countLeave, autoStandard: state.autoStandard,
       ded: state.ded,
       customIncome: state.customIncome, customDeductions: state.customDeductions
     };
@@ -241,6 +241,7 @@ function loadLocal() {
   try {
     const s = JSON.parse(localStorage.getItem(lsSettings()) || 'null');
     if (s) Object.keys(s).forEach(k => {
+      if (k === 'raiseStandard') return;
       if (k === 'ded') Object.assign(state.ded, s.ded || {});
       else if (s[k] !== undefined) state[k] = s[k];
     });
@@ -322,7 +323,6 @@ function showMainApp() {
 }
 async function loadUserData() {
   loadLocal();
-  // ✅ Áp dụng auto-standard trước render lần đầu
   applyAutoStandard();
   updateMonthLabel(); updateAll();
   try { await loadUserProfile(); currentRole = await ensureRole(); } catch (e) { currentRole = 'user'; }
@@ -334,11 +334,11 @@ async function loadUserData() {
     if (v && Object.keys(v).length > 0) {
       applyingRemote = true;
       Object.keys(v).forEach(k => {
+        if (k === 'raiseStandard') return;
         if (k === 'ded') Object.assign(state.ded, v.ded || {});
         else if (v[k] !== undefined) state[k] = v[k];
       });
       if (state.capStandard === undefined) state.capStandard = 24;
-      // ✅ Auto-standard sau khi nạp settings từ Firebase
       applyAutoStandard();
       saveLocal(); applyingRemote = false;
       updateMonthLabel(); updateAll();
@@ -368,17 +368,31 @@ function attachListeners() {
   sRef.on('value', snap => {
     if (applyingRemote) return;
     const v = snap.val(); if (!v) return;
+
+    const ae = document.activeElement;
+    const isEditing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && $('#sheetBody')?.contains(ae);
+    if (isEditing) return;
+
     applyingRemote = true;
     Object.keys(v).forEach(k => {
+      if (k === 'raiseStandard') return;
       if (k === 'ded') Object.assign(state.ded, v.ded || {});
       else if (v[k] !== undefined) state[k] = v[k];
     });
     if (state.capStandard === undefined) state.capStandard = 24;
-    // ✅ Recompute standard nếu bật auto
     const stdChanged = applyAutoStandard();
     saveLocal(); applyingRemote = false;
     updateMonthLabel(); renderCalendar(); renderStats(compute());
-    if (sheetMode === 'settings') openSettings();
+
+    if (sheetMode === 'settings') {
+      const bodyEl = $('#sheetBody');
+      if (bodyEl) {
+        const st = bodyEl.scrollTop;
+        bodyEl.innerHTML = buildSettingsBody();
+        bodyEl.scrollTop = st;
+        updateSettingsPreview();
+      }
+    }
     if (stdChanged) scheduleFirebase();
   });
   activeListeners.push(sRef);
@@ -401,9 +415,19 @@ function attachListeners() {
     let changed = false;
     for (const k of Object.keys(merged)) if (state.sysNames[k] !== merged[k]) { changed = true; break; }
     state.sysNames = merged;
+
     if (changed && sheetMode === 'settings') {
-      const bodyEl = $('#sheetBody');
-      if (bodyEl) bodyEl.innerHTML = buildSettingsBody();
+      const ae = document.activeElement;
+      const isEditing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && $('#sheetBody')?.contains(ae);
+      if (!isEditing) {
+        const bodyEl = $('#sheetBody');
+        if (bodyEl) {
+          const st = bodyEl.scrollTop;
+          bodyEl.innerHTML = buildSettingsBody();
+          bodyEl.scrollTop = st;
+          updateSettingsPreview();
+        }
+      }
     }
   });
   activeListeners.push(snRef);
@@ -421,8 +445,8 @@ function flushFirebase() {
   const s = {
     standard: state.standard, capStandard: state.capStandard,
     base: state.base, cash: state.cash, allowance: state.allowance,
-    raiseMax: state.raiseMax, raiseStandard: state.raiseStandard,
-    countLeave: state.countLeave, autoStandard: state.autoStandard,   // ✅
+    raiseMax: state.raiseMax,
+    countLeave: state.countLeave, autoStandard: state.autoStandard,
     ded: state.ded,
     customIncome: state.customIncome, customDeductions: state.customDeductions
   };
@@ -434,8 +458,8 @@ function pushAllToFirebase() {
   const s = {
     standard: state.standard, capStandard: state.capStandard,
     base: state.base, cash: state.cash, allowance: state.allowance,
-    raiseMax: state.raiseMax, raiseStandard: state.raiseStandard,
-    countLeave: state.countLeave, autoStandard: state.autoStandard,   // ✅
+    raiseMax: state.raiseMax,
+    countLeave: state.countLeave, autoStandard: state.autoStandard,
     ded: state.ded,
     customIncome: state.customIncome, customDeductions: state.customDeductions
   };
@@ -450,6 +474,7 @@ window.flushNow = flushNow;
 window.detachAllListeners = detachAllListeners;
 window.closeDropdown = closeDropdown;
 window.hideSheet = hideSheet;
+
 /* ===== COMPUTE & RENDER ===== */
 function compute() {
   const n = dim(state.year, state.month);
@@ -471,19 +496,26 @@ function compute() {
   }
 
   const workTotal = workMain + workCT;
-  const actual = workMain + (state.countLeave ? c['L'] + c['P'] : 0);
-  const cap = state.capStandard > 0 ? state.capStandard : 24;
-  const capEff = Math.min(actual, cap);
+  const leave = state.countLeave ? c['L'] + c['P'] : 0;
 
-  let salary = state.base / cap * actual;
+  // Công lương (chỉ hiển thị UI) — KHÔNG gồm CT
+  const actual = workMain + leave;
+  // Công dùng để tính tiền — GỒM CT + nghỉ phép/lễ
+  const payable = workTotal + leave;
+
+  const cap = state.capStandard > 0 ? state.capStandard : 24;
+  const capEff = Math.min(payable, cap);
+
+  let salary = state.base / cap * payable;
   let cashM = state.cash / cap * capEff;
   let allowM = state.allowance / cap * capEff;
-  const rs = state.raiseStandard > 0 ? state.raiseStandard : 1;
-  let raisePay = Math.min(state.raiseMax, state.raiseMax / rs * actual);
+
+  const rs = state.standard > 0 ? state.standard : 24;
+  let raisePay = Math.min(state.raiseMax, state.raiseMax / rs * payable);
 
   let customIncomeTotal = 0;
   state.customIncome.forEach(item => {
-    if (item.type === 'calc') customIncomeTotal += item.value / cap * actual;
+    if (item.type === 'calc') customIncomeTotal += item.value / cap * payable;
     else customIncomeTotal += item.value;
   });
 
@@ -502,7 +534,7 @@ function compute() {
   else if (missing >= 18) rank = 'TẠCH';
   else if (missing < 7) rank = 'B';
 
-  return { c, workMain, workCT, workTotal, actual, cap, salary, cashM, allowM, raisePay, customIncomeTotal, trucM, ctM, total, ded, take, missing, rank };
+  return { c, workMain, workCT, workTotal, actual, payable, cap, salary, cashM, allowM, raisePay, customIncomeTotal, trucM, ctM, total, ded, take, missing, rank };
 }
 
 function renderCalendar() {
@@ -572,7 +604,7 @@ function updateCell(k) {
 
 function renderStats(r) {
   $('#stWork').textContent = fmtQty(r.workTotal);
-  $('#stActual').textContent = fmtQty(r.actual);
+  $('#stActual').textContent = fmtQty(r.actual); // Đã trừ CT
   $('#stTruc').textContent = r.c['T'] + r.c['C'] + r.c['TrL'];
   $('#stCt').textContent = fmtQty(r.workCT);
   $('#stRank').textContent = r.rank;
@@ -583,28 +615,30 @@ function renderStats(r) {
   else if (r.rank === 'C') sr.classList.add('r-C');
   else sr.classList.add('r-T');
   $('#bbTake').textContent = fmtMoney(r.take);
-  $('#stActual2').textContent = fmtQty(r.actual);
+
+  // Thanh tiến độ giờ là Công thực tế (workTotal)
+  $('#stActual2').textContent = fmtQty(r.workTotal);
   $('#stCap').textContent = fmtQty(r.cap);
-  const pct = Math.min(100, (r.actual / r.cap) * 100);
+  const pct = Math.min(100, (r.workTotal / r.cap) * 100);
   const fill = $('#targetFill');
   fill.style.width = pct + '%';
-  fill.classList.toggle('reached', r.actual >= r.cap);
+  fill.classList.toggle('reached', r.workTotal >= r.cap);
 }
 
 function buildSalaryHtml(r) {
-  const cap = r.cap, capEff = Math.min(r.actual, cap);
-  const rs = state.raiseStandard > 0 ? state.raiseStandard : 1;
+  const cap = r.cap, capEff = Math.min(r.payable, cap);
+  const rs = state.standard > 0 ? state.standard : 24;
   const addRow = (icon, name, calc, amount, cls) => `<div class="sal-row"><div class="sal-icon ${cls || ''}">${icon}</div><div class="sal-info"><div class="sal-name">${name}</div>${calc ? `<div class="sal-calc">${calc}</div>` : ''}</div><div class="sal-amount ${cls || ''}">${amount}</div></div>`;
 
   let incomeHtml = '';
-  const over = r.actual > cap ? ` (+${fmtQty(r.actual - cap)})` : '';
-  incomeHtml += addRow(svgWallet, state.sysNames.base, `${fmtInt(state.base)} ÷ ${fmtQty(cap)} × ${fmtQty(r.actual)}${over}`, fmtInt(r.salary), 'plus');
-  incomeHtml += addRow(svgBanknote, state.sysNames.cash, `${fmtInt(state.cash)} ÷ ${fmtQty(cap)} × ${fmtQty(capEff)}${r.actual>cap?' (tối đa)':''}`, fmtInt(r.cashM), 'plus');
-  incomeHtml += addRow(svgGift, state.sysNames.allowance, `${fmtInt(state.allowance)} ÷ ${fmtQty(cap)} × ${fmtQty(capEff)}${r.actual>cap?' (tối đa)':''}`, fmtInt(r.allowM), 'plus');
-  if (state.raiseMax > 0) incomeHtml += addRow(svgTrendingUp, state.sysNames.raise, `${fmtInt(state.raiseMax)} ÷ ${fmtQty(rs)} × ${fmtQty(Math.min(r.actual, rs))}${r.actual>=rs?' (tối đa)':''}`, fmtInt(r.raisePay), 'plus');
+  const over = r.payable > cap ? ` (+${fmtQty(r.payable - cap)})` : '';
+  incomeHtml += addRow(svgWallet, state.sysNames.base, `${fmtInt(state.base)} ÷ ${fmtQty(cap)} × ${fmtQty(r.payable)}${over}`, fmtInt(r.salary), 'plus');
+  incomeHtml += addRow(svgBanknote, state.sysNames.cash, `${fmtInt(state.cash)} ÷ ${fmtQty(cap)} × ${fmtQty(capEff)}${r.payable>cap?' (tối đa)':''}`, fmtInt(r.cashM), 'plus');
+  incomeHtml += addRow(svgGift, state.sysNames.allowance, `${fmtInt(state.allowance)} ÷ ${fmtQty(cap)} × ${fmtQty(capEff)}${r.payable>cap?' (tối đa)':''}`, fmtInt(r.allowM), 'plus');
+  if (state.raiseMax > 0) incomeHtml += addRow(svgTrendingUp, state.sysNames.raise, `${fmtInt(state.raiseMax)} ÷ ${fmtQty(rs)} × ${fmtQty(Math.min(r.payable, rs))}${r.payable>=rs?' (tối đa)':''}`, fmtInt(r.raisePay), 'plus');
   state.customIncome.forEach(item => {
-    const calc = item.type === 'calc' ? `${fmtInt(item.value)} ÷ ${fmtQty(cap)} × ${fmtQty(r.actual)}` : 'Cố định';
-    const amt = item.type === 'calc' ? item.value / cap * r.actual : item.value;
+    const calc = item.type === 'calc' ? `${fmtInt(item.value)} ÷ ${fmtQty(cap)} × ${fmtQty(r.payable)}` : 'Cố định';
+    const amt = item.type === 'calc' ? item.value / cap * r.payable : item.value;
     incomeHtml += addRow(svgWallet, item.name, calc, fmtInt(amt), 'plus');
   });
   if (r.c['T']) incomeHtml += addRow(svgClock, `Trực thường × ${r.c['T']}`, '170.000 đ/ngày', fmtInt(r.c['T']*RATES.T), 'plus');
@@ -635,7 +669,7 @@ function updateMonthLabel() {
   $('#monthLabel').innerHTML = 'Tháng ' + state.month + '/' + state.year + '<span class="caret">▾</span>';
 }
 function updateAll() {
-  applyAutoStandard();   // ✅ đảm bảo luôn tươi trước khi render
+  applyAutoStandard();
   saveLocal();
   renderCalendar();
   renderStats(compute());
@@ -714,8 +748,8 @@ function getGroupsForDay(dt, k) {
   const holiday = isHoliday(k || '');
   const ctG = { key:'ct', label:'Đi công tác', hint:'không bắt buộc', codes:['HNT','HNN','YBT','YBN'] };
   let trucLabel, trucCodes;
-  if (dt === 'sunday') { trucLabel = 'Trực chủ nhật'; trucCodes = holiday ? ['C', 'TrL'] : ['C']; }
-  else { trucLabel = 'Trực thường'; trucCodes = holiday ? ['T', 'TrL'] : ['T']; }
+  if (dt === 'sunday') { trucLabel = 'Trực chủ nhật'; trucCodes = holiday ? ['C','TrL'] : ['C']; }
+  else { trucLabel = 'Trực thường'; trucCodes = holiday ? ['T','TrL'] : ['T']; }
   if (dt === 'sunday') return [ { key:'truc', label:trucLabel, hint:'', codes:trucCodes }, ctG ];
   if (dt === 'saturday') return [
     { key:'main', label:'Công / nghỉ', hint:'tối đa ½ ngày', codes:['x/2','CT/2','L','L0','P','O'] },
@@ -781,17 +815,17 @@ function buildSettingsBody() {
     <div class="set-group-title">Cài đặt chung</div>
     <div class="set-group">
       <div class="set-row">
-	  <div class="set-row-left">
-		<span class="set-row-label">Công đạt chỉ tiêu</span>
-		<span class="field-hint">${state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Mốc tính Lương cơ bản, Tiền mặt, Trợ cấp'}</span>
-	  </div>
-	  <input type="number" step="0.5" class="set-row-input" data-field="capStandard" value="${state.capStandard}" ${state.autoStandard ? 'readonly' : ''}>
-	</div>
+        <div class="set-row-left">
+          <span class="set-row-label">Công đạt chỉ tiêu</span>
+          <span class="field-hint">${state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Mốc tính Lương cơ bản, Tiền mặt, Trợ cấp, Lương tăng'}</span>
+        </div>
+        <input type="number" step="0.5" class="set-row-input" data-field="capStandard" value="${state.capStandard}" ${state.autoStandard ? 'readonly' : ''}>
+      </div>
 
       <div class="set-row">
         <div class="set-row-left">
           <span class="set-row-label">Công chuẩn xếp loại</span>
-          <span class="field-hint">${state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Dùng để tính hạng A, B, C, TẠCH'}</span>
+          <span class="field-hint">${state.autoStandard ? '⚙️ Đang tự động theo tháng · mốc Lương tăng tối đa' : 'Mốc xếp loại A/B/C/TẠCH và Lương tăng tối đa'}</span>
         </div>
         <input type="number" step="0.5" class="set-row-input" data-field="standard" value="${state.standard}" ${state.autoStandard ? 'readonly' : ''}>
       </div>
@@ -805,14 +839,6 @@ function buildSettingsBody() {
           <input type="checkbox" data-field="autoStandard" ${state.autoStandard?'checked':''}>
           <span class="ios-slider"></span>
         </label>
-      </div>
-
-      <div class="set-row">
-        <div class="set-row-left">
-          <span class="set-row-label">Công tối đa (Lương tăng)</span>
-          <span class="field-hint">Mốc đạt mức Lương tăng tối đa</span>
-        </div>
-        <input type="number" step="0.5" class="set-row-input" data-field="raiseStandard" value="${state.raiseStandard}">
       </div>
 
       <div class="set-action-row" data-act="autostd">
@@ -925,7 +951,7 @@ function buildHelpBody() {
     g.i.forEach(([c, d]) => { html += '<div class="help-item"><span class="help-code">' + c + '</span><span class="help-desc">' + d + '</span></div>'; });
     html += '</div></div>';
   });
-  html += '<div class="help-note"><b>Lương theo công:</b> lương ÷ chỉ tiêu × công thực tế (vượt chỉ tiêu vẫn cộng).<br><b>Công tác (CT):</b> Không tính vào Công lương, chỉ tính vào tổng Công TT.<br><b>Nghỉ lễ (L0):</b> Không cộng vào công lương (kể cả khi bật "Cộng Lễ/Phép").<br><b>Tiền mặt &amp; Trợ cấp:</b> trần tại chỉ tiêu.<br><b>Thứ 7:</b> tối đa ½ ngày. <b>CN:</b> chỉ C và công tác.<br><b>Ngày lễ VN:</b> có chấm đỏ trên lịch — mở ngày thấy TrL và tên lễ.<br><b>Tự động công chuẩn:</b> khi bật, Công chuẩn xếp loại sẽ tự tính lại mỗi khi chuyển tháng.</div>';
+  html += '<div class="help-note"><b>Lương theo công:</b> lương ÷ chỉ tiêu × công thực tế (vượt chỉ tiêu vẫn cộng).<br><b>Công tác (CT):</b> Được tính tiền lương như công thường nhưng không cộng vào số Công lương (chỉ cộng vào Công TT).<br><b>Nghỉ lễ (L0):</b> Không cộng vào công lương (kể cả khi bật "Cộng Lễ/Phép").<br><b>Tiền mặt &amp; Trợ cấp:</b> trần tại chỉ tiêu. <b>Lương tăng:</b> mốc = công chuẩn tháng.<br><b>Thứ 7:</b> tối đa ½ ngày. <b>CN:</b> chỉ C và công tác.<br><b>Ngày lễ VN:</b> có chấm đỏ trên lịch — mở ngày thấy TrL và tên lễ.<br><b>Tự động công chuẩn:</b> khi bật, Công chuẩn xếp loại sẽ tự tính lại mỗi khi chuyển tháng.</div>';
   return html;
 }
 
@@ -1021,7 +1047,6 @@ function openBgPicker() {
   setSheet('Màu nền', 'Chọn nền phía sau giao diện', buildBgBody(),
     '<button type="button" class="btn primary" data-act="done">Đóng</button>');
 }
-
 function buildBgBody() {
   let html = '<div class="accent-grid">';
   BG_PRESETS.forEach(p => {
@@ -1079,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (a === 'profile') openProfile();
     else if (a === 'theme') applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     else if (a === 'accent') { openAccentPicker(); }
-	else if (a === 'bg') { openBgPicker(); }
+    else if (a === 'bg') { openBgPicker(); }
     else if (a === 'help') openHelp();
     else if (a === 'logout') { if (typeof logout === 'function') logout(); }
   });
@@ -1090,13 +1115,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDropdown(); });
 
-  // ✅ Month navigation + auto-standard
   $('#prevMonth').addEventListener('click', () => {
     flushNow(); hideSheet();
     let m = state.month - 1, y = state.year;
     if (m < 1) { m = 12; y--; }
     state.month = m; state.year = y;
-    applyAutoStandard();   // ✅
+    applyAutoStandard();
     loadLocalForMonth(); updateMonthLabel(); attachListeners(); updateAll(); save();
   });
   $('#nextMonth').addEventListener('click', () => {
@@ -1104,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let m = state.month + 1, y = state.year;
     if (m > 12) { m = 1; y++; }
     state.month = m; state.year = y;
-    applyAutoStandard();   // ✅
+    applyAutoStandard();
     loadLocalForMonth(); updateMonthLabel(); attachListeners(); updateAll(); save();
   });
   $('#monthLabel').addEventListener('click', openMonthSheet);
@@ -1182,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('#sheetBody').addEventListener('click', async e => {
-	if (sheetMode === 'bg') {
+    if (sheetMode === 'bg') {
       const bgBtn = e.target.closest('[data-bg-id]');
       if (bgBtn) {
         const id = bgBtn.dataset.bgId;
@@ -1242,7 +1266,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addBtn) { openAddModal(addBtn.dataset.add); return; }
 
     if (e.target.closest('[data-act="autostd"]')) {
-      // ✅ Nút "Tính lại ngay" — luôn tính và cập nhật cả capStandard lẫn standard
       const cnt = calcAutoStandard(state.year, state.month);
       state.capStandard = cnt;
       state.standard = cnt;
@@ -1258,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (mb) {
         flushNow();
         state.year = pickYear; state.month = Number(mb.dataset.m);
-        applyAutoStandard();   // ✅
+        applyAutoStandard();
         loadLocalForMonth(); hideSheet(); updateMonthLabel(); attachListeners(); updateAll(); save();
       }
       return;
@@ -1283,33 +1306,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (f === 'countLeave') { state.countLeave = e.target.checked; refreshUI(); updateSettingsPreview(); return; }
 
-    // ✅ Toggle autoStandard
     if (f === 'autoStandard') {
-	  state.autoStandard = e.target.checked;
-	  if (state.autoStandard) applyAutoStandard();
+      state.autoStandard = e.target.checked;
+      if (state.autoStandard) applyAutoStandard();
 
-	  // ✅ Cập nhật CẢ 2 field standard + capStandard
-	  const stdInput = document.querySelector('.set-row-input[data-field="standard"]');
-	  const capInput = document.querySelector('.set-row-input[data-field="capStandard"]');
+      const stdInput = document.querySelector('.set-row-input[data-field="standard"]');
+      const capInput = document.querySelector('.set-row-input[data-field="capStandard"]');
 
-	  if (stdInput) {
-		stdInput.value = state.standard;
-		if (state.autoStandard) stdInput.setAttribute('readonly', '');
-		else stdInput.removeAttribute('readonly');
-		const hint = stdInput.parentElement.querySelector('.field-hint');
-		if (hint) hint.textContent = state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Dùng để tính hạng A, B, C, TẠCH';
-	  }
-	  if (capInput) {
-		capInput.value = state.capStandard;
-		if (state.autoStandard) capInput.setAttribute('readonly', '');
-		else capInput.removeAttribute('readonly');
-		const hint = capInput.parentElement.querySelector('.field-hint');
-		if (hint) hint.textContent = state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Mốc tính Lương cơ bản, Tiền mặt, Trợ cấp';
-	  }
+      if (stdInput) {
+        stdInput.value = state.standard;
+        if (state.autoStandard) stdInput.setAttribute('readonly', '');
+        else stdInput.removeAttribute('readonly');
+        const hint = stdInput.parentElement.querySelector('.field-hint');
+        if (hint) hint.textContent = state.autoStandard ? '⚙️ Đang tự động theo tháng · mốc Lương tăng tối đa' : 'Mốc xếp loại A/B/C/TẠCH và Lương tăng tối đa';
+      }
+      if (capInput) {
+        capInput.value = state.capStandard;
+        if (state.autoStandard) capInput.setAttribute('readonly', '');
+        else capInput.removeAttribute('readonly');
+        const hint = capInput.parentElement.querySelector('.field-hint');
+        if (hint) hint.textContent = state.autoStandard ? '⚙️ Đang tự động theo tháng' : 'Mốc tính Lương cơ bản, Tiền mặt, Trợ cấp, Lương tăng';
+      }
 
-	  refreshUI(); updateSettingsPreview();
-	  return;
-	}
+      refreshUI(); updateSettingsPreview();
+      return;
+    }
 
     let val;
     if (e.target.type === 'text') {
@@ -1329,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (key === 'raise') state.raiseMax = val;
     }
     else if (group === 'ded') state.ded[key] = val;
-    else if (f === 'capStandard' || f === 'standard' || f === 'raiseStandard') state[f] = Math.max(0.5, val);
+    else if (f === 'capStandard' || f === 'standard') state[f] = Math.max(0.5, val);
     refreshUI(); updateSettingsPreview();
   });
 
