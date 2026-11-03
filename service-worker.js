@@ -1,18 +1,21 @@
 /* ===== SERVICE WORKER — Offline cache ===== */
-// ⚠️ Khi deploy code mới, đổi CACHE_VERSION để buộc browser cập nhật
-const CACHE_VERSION = 'v1.8';
+// ⚠️ Mỗi lần deploy code mới, đổi CACHE_VERSION để buộc browser cập nhật
+const CACHE_VERSION = 'v1.9';
 const CACHE_NAME = 'bangcong-' + CACHE_VERSION;
 
 const PRECACHE = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
-  './auth.js',
-  './firebase.js',
   './manifest.json',
-  './icon.svg',
-  './icon-maskable.svg',
+  './css/style.css',
+  './js/app.js',
+  './js/auth.js',
+  './js/firebase.js',
+  './icons/icon.svg',
+  './icons/icon-maskable.svg',
+  './icons/icon-180.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
@@ -50,7 +53,6 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) {
-        // Stale-while-revalidate: trả cache ngay, cập nhật ngầm
         fetch(e.request)
           .then(res => {
             if (res && res.status === 200) {
