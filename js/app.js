@@ -103,6 +103,9 @@ const state = {
   base: 6000000, cash: 2200000, allowance: 500000,
   raiseMax: 480000, countLeave: false,
   autoStandard: true,
+  theme: localStorage.getItem('theme') || 'light',
+  accent: localStorage.getItem('accent') || 'blue',
+  bg: localStorage.getItem('bg') || 'aurora',
   ded: { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 },
   customIncome: [], customDeductions: [], days: {},
   sysNames: { ...DEFAULT_SYS_NAMES }
@@ -154,6 +157,9 @@ function resetState() {
   state.base = 6000000; state.cash = 2200000; state.allowance = 500000;
   state.raiseMax = 480000; state.countLeave = false;
   state.autoStandard = true;
+  state.theme = 'light';
+  state.accent = 'blue';
+  state.bg = 'aurora';
   state.ded = { bhxh:480000, bhyt:90000, bhtn:60000, quy:100000, cd:40000, qdd:30000 };
   state.customIncome = []; state.customDeductions = []; state.days = {};
   currentProfile = { displayName: '', photoURL: '' };
@@ -180,42 +186,42 @@ function applyAutoStandard() {
 }
 
 /* ===== THEME & ACCENT ===== */
-let currentTheme = localStorage.getItem('theme') || 'light';
-let currentAccent = localStorage.getItem('accent') || 'blue';
-let currentBg = localStorage.getItem('bg') || 'aurora';
-
 const svgSun = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
 const svgMoon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 
-function applyTheme(theme) {
+function applyTheme(theme, saveToDb = true) {
   currentTheme = theme;
+  state.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
   const themeIcon = $('#themeIcon'), text = $('#themeText');
   if (theme === 'dark') { if (themeIcon) themeIcon.innerHTML = svgSun; if (text) text.textContent = 'Giao diện sáng'; }
   else { if (themeIcon) themeIcon.innerHTML = svgMoon; if (text) text.textContent = 'Giao diện tối'; }
   updateMetaThemeColor();
+  if (saveToDb) save();
 }
 function updateMetaThemeColor() {
   const meta = document.querySelector('meta[name="theme-color"]'); if (!meta) return;
-  if (currentTheme === 'dark') meta.setAttribute('content', '#0f172a');
+  if (state.theme === 'dark') meta.setAttribute('content', '#0f172a');
   else {
-    const preset = ACCENT_PRESETS.find(p => p.id === currentAccent) || ACCENT_PRESETS[0];
+    const preset = ACCENT_PRESETS.find(p => p.id === state.accent) || ACCENT_PRESETS[0];
     meta.setAttribute('content', preset.color);
   }
 }
-function applyAccent(accent) {
+function applyAccent(accent, saveToDb = true) {
   if (!ACCENT_PRESETS.some(p => p.id === accent)) accent = 'blue';
-  currentAccent = accent;
+  state.accent = accent;
   document.documentElement.setAttribute('data-accent', accent);
   localStorage.setItem('accent', accent);
   updateMetaThemeColor();
+  if (saveToDb) save();
 }
-function applyBg(bg) {
+function applyBg(bg, saveToDb = true) {
   if (!BG_PRESETS.some(p => p.id === bg)) bg = 'aurora';
-  currentBg = bg;
+  state.bg = bg;
   document.documentElement.setAttribute('data-bg', bg);
   localStorage.setItem('bg', bg);
+  if (saveToDb) save();
 }
 
 /* ===== LOCAL STORAGE ===== */
@@ -226,6 +232,7 @@ function saveLocal() {
   if (!currentUid) return;
   try {
     const s = {
+      theme: state.theme, accent: state.accent, bg: state.bg,
       standard: state.standard, capStandard: state.capStandard,
       base: state.base, cash: state.cash, allowance: state.allowance,
       raiseMax: state.raiseMax,
@@ -245,6 +252,10 @@ function loadLocal() {
       if (k === 'ded') Object.assign(state.ded, s.ded || {});
       else if (s[k] !== undefined) state[k] = s[k];
     });
+    if (s && s.theme && s.theme !== state.theme) applyTheme(s.theme, false);
+    if (s && s.accent && s.accent !== state.accent) applyAccent(s.accent, false);
+    if (s && s.bg && s.bg !== state.bg) applyBg(s.bg, false);
+
     const d = JSON.parse(localStorage.getItem(lsMonth()) || 'null');
     if (d) state.days = migrateDayCodes(d);
   } catch (e) {}
@@ -339,6 +350,11 @@ async function loadUserData() {
         else if (v[k] !== undefined) state[k] = v[k];
       });
       if (state.capStandard === undefined) state.capStandard = 24;
+      
+      if (v.theme) applyTheme(v.theme, false);
+      if (v.accent) applyAccent(v.accent, false);
+      if (v.bg) applyBg(v.bg, false);
+
       applyAutoStandard();
       saveLocal(); applyingRemote = false;
       updateMonthLabel(); updateAll();
@@ -372,6 +388,11 @@ function attachListeners() {
     const ae = document.activeElement;
     const isEditing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && $('#sheetBody')?.contains(ae);
     if (isEditing) return;
+
+    // Apply theme changes from remote
+    if (v.theme && v.theme !== state.theme) applyTheme(v.theme, false);
+    if (v.accent && v.accent !== state.accent) applyAccent(v.accent, false);
+    if (v.bg && v.bg !== state.bg) applyBg(v.bg, false);
 
     applyingRemote = true;
     Object.keys(v).forEach(k => {
@@ -443,6 +464,7 @@ function flushFirebase() {
   if (!firebaseReady || !currentUid) return;
   const writes = pendingWrite; pendingWrite = false;
   const s = {
+    theme: state.theme, accent: state.accent, bg: state.bg,
     standard: state.standard, capStandard: state.capStandard,
     base: state.base, cash: state.cash, allowance: state.allowance,
     raiseMax: state.raiseMax,
@@ -456,6 +478,7 @@ function flushFirebase() {
 function pushAllToFirebase() {
   if (!firebaseReady || !currentUid) return;
   const s = {
+    theme: state.theme, accent: state.accent, bg: state.bg,
     standard: state.standard, capStandard: state.capStandard,
     base: state.base, cash: state.cash, allowance: state.allowance,
     raiseMax: state.raiseMax,
@@ -1036,7 +1059,7 @@ function openAccentPicker() {
 function buildAccentBody() {
   let html = '<div class="accent-grid">';
   ACCENT_PRESETS.forEach(p => {
-    const on = currentAccent === p.id;
+    const on = state.accent === p.id;
     html += `<button type="button" class="accent-item${on ? ' on' : ''}" data-accent-id="${p.id}"><span class="accent-swatch" style="background:${p.color}">${on ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</span><span class="accent-name">${escapeHtml(p.name)}</span></button>`;
   });
   html += '</div>';
@@ -1050,7 +1073,7 @@ function openBgPicker() {
 function buildBgBody() {
   let html = '<div class="accent-grid">';
   BG_PRESETS.forEach(p => {
-    const on = currentBg === p.id;
+    const on = state.bg === p.id;
     const preview = `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[1]}, ${p.colors[2]})`;
     html += `<button type="button" class="accent-item${on ? ' on' : ''}" data-bg-id="${p.id}">
       <span class="accent-swatch" style="background:${preview}">
@@ -1066,15 +1089,20 @@ function closeDropdown() { $('#dropdown').classList.remove('open'); }
 
 /* ===== KHỞI TẠO ===== */
 document.addEventListener('DOMContentLoaded', () => {
-  applyTheme(currentTheme);
-  applyAccent(currentAccent);
-  applyBg(currentBg);
+  applyTheme(state.theme, false);
+  applyAccent(state.accent, false);
+  applyBg(state.bg, false);
   initFirebase();
   if (firebaseReady) {
     auth.onAuthStateChanged(user => {
       $('#loadingScreen').style.display = 'none';
       if (user) { currentUid = user.uid; currentEmail = user.email || ''; showMainApp(); loadUserData(); }
-      else { currentUid = null; currentEmail = ''; currentRole = null; detachAllListeners(); resetState(); closeDropdown(); showAuthScreen(); }
+      else {
+        currentUid = null; currentEmail = ''; currentRole = null;
+        detachAllListeners(); resetState();
+        applyTheme('light', false); applyAccent('blue', false); applyBg('aurora', false);
+        closeDropdown(); showAuthScreen();
+      }
     });
   } else {
     showAuthScreen();
@@ -1102,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (a === 'settings') openSettings();
     else if (a === 'admin') openAdmin();
     else if (a === 'profile') openProfile();
-    else if (a === 'theme') applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    else if (a === 'theme') applyTheme(state.theme === 'dark' ? 'light' : 'dark');
     else if (a === 'accent') { openAccentPicker(); }
     else if (a === 'bg') { openBgPicker(); }
     else if (a === 'help') openHelp();
